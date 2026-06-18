@@ -25,8 +25,10 @@ services:
     envVars:
       - key: ENV
         value: production
+      # Canonical web origin (must match the browser Origin exactly for CORS with
+      # credentials). Render serves the web at www and 301-redirects the apex to it.
       - key: FRONTEND_URL
-        value: https://iagricultura.ro
+        value: https://www.iagricultura.ro
       - key: SESSION_COOKIE_DOMAIN
         value: .iagricultura.ro
       # Render generates a strong secret and keeps it stable across deploys.
