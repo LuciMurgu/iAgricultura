@@ -89,6 +89,15 @@ def main() -> None:
     run_migrations()
     asyncio.run(run_seeds())
 
+    # The bootstrap/seed steps above ran inside temporary event loops
+    # (asyncio.run), which left asyncpg connections in the shared engine pool
+    # bound to loops that are now closed. Reusing them from uvicorn's event loop
+    # raises "another operation is in progress". Abandon the stale connections
+    # (close=False avoids cross-loop I/O) so uvicorn starts with a fresh pool.
+    from farm_copilot.database.session import engine
+
+    engine.sync_engine.dispose(close=False)
+
     # Render (and most PaaS) inject the listening port via $PORT. Fall back to
     # 8000 for local/Docker runs that don't set it.
     port = int(os.environ.get("PORT", "8000"))
