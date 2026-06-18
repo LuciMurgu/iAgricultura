@@ -18,9 +18,11 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Copy dependency files first (cache layer)
+# Copy dependency files first (cache layer). Install only third-party deps here
+# (--no-install-project): the app runs via PYTHONPATH=/app/src, so the project
+# itself is not built as a wheel (which would require README.md + src/ at this layer).
 COPY pyproject.toml uv.lock* ./
-RUN uv sync --no-dev --frozen
+RUN uv sync --no-dev --frozen --no-install-project
 
 # Copy application code
 COPY src/ src/
