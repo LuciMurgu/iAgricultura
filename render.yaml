@@ -1,8 +1,9 @@
-# Render blueprint — Farm Copilot API (demo deploy)
+# Render blueprint — Farm Copilot (demo deploy)
 #
-# Deploys the FastAPI backend as a Docker web service. The Next.js frontend is
-# hosted on Vercel and the database on Supabase (set DATABASE_URL below), so
-# they are not defined here.
+# Deploys both apps as Docker web services:
+#   - farm-copilot-api : FastAPI backend  (api.iagricultura.ro)
+#   - farm-copilot-web : Next.js frontend (iagricultura.ro)
+# The database lives on Supabase (set DATABASE_URL below).
 #
 # Usage: Render Dashboard > New > Blueprint > pick this repo. Then set the
 # secret env vars marked `sync: false` (DATABASE_URL, demo password, and the
@@ -54,3 +55,19 @@ services:
         value: Cont Demo
       - key: DEMO_FARM_NAME
         value: Ferma Demo
+
+  - type: web
+    name: farm-copilot-web
+    runtime: docker
+    dockerfilePath: apps/web/Dockerfile
+    dockerContext: apps/web
+    plan: free
+    region: frankfurt
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      # Baked into the client bundle at build time (Render passes env vars as
+      # Docker build args to matching ARG instructions). Must be the public API
+      # origin so the browser talks to the real backend.
+      - key: NEXT_PUBLIC_API_URL
+        value: https://api.iagricultura.ro
