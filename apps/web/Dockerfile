@@ -2,8 +2,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm. Pin to 9.x (matches lockfileVersion 9.0); pnpm@latest (v11+)
+# requires Node 22 and crashes on this Node 20 base with node:sqlite errors.
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 # Dependencies
 COPY package.json pnpm-lock.yaml ./
