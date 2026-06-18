@@ -3,7 +3,9 @@
 
 services:
   db:
-    image: postgres:16-alpine
+    # pgvector image (not plain postgres) so the `vector` extension the schema
+    # needs is available locally, matching Supabase.
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -49,7 +51,6 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_STRICT_API: "false"
 
 volumes:
   pgdata:

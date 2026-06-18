@@ -11,8 +11,8 @@ Single source of truth. Replaces the contradictory copies that lived in
                   Cloudflare (DNS + SSL + WAF + proxied)
                         |                            |
                         v                            v
-                Vercel (Next.js)            VPS: docker compose
-                apps/web                    apps/api (FastAPI + scheduler)
+                Vercel (Next.js)            Render (Docker)
+                apps/web                    apps/api (FastAPI)
                         \                            /
                          \                          /
                           v                        v
@@ -20,12 +20,17 @@ Single source of truth. Replaces the contradictory copies that lived in
                           (transaction pooler URL)
 ```
 
-Three providers, each doing one job:
+Four providers, each doing one job:
 
 - **Vercel** hosts the Next.js SPA.
-- **VPS** runs the FastAPI container because the ANAF auto-sync scheduler is a long-running process.
+- **Render** runs the FastAPI container (Docker) — no server to manage.
 - **Supabase** provides managed Postgres.
 - **Cloudflare** terminates TLS, proxies traffic, and provides DNS and WAF.
+
+This guide covers the **demo deploy**: ANAF auto-sync is disabled
+(`ANAF_SYNC_ENABLED=false`), so the API is a stateless service that fits a
+managed container platform. For a real-data launch with the always-on ANAF
+scheduler, run the API on a VPS instead (see "Alternative: VPS" at the end).
 
 ---
 
@@ -50,118 +55,69 @@ Three providers, each doing one job:
 2. DNS records:
    - `iagricultura.ro` — CNAME to your Vercel project domain. Proxied (orange cloud ON).
    - `www.iagricultura.ro` — CNAME to `iagricultura.ro`. Proxied.
-   - `api.iagricultura.ro` — A record to your VPS IP. Proxied.
+   - `api.iagricultura.ro` — CNAME to your Render service host (`<service>.onrender.com`). Proxied.
 3. SSL/TLS:
-   - Mode: **Full** (origin terminates HTTP; Cloudflare encrypts browser to edge).
+   - Mode: **Full** (origin terminates HTTPS; Cloudflare encrypts browser to edge).
    - Always Use HTTPS: ON.
    - Min TLS: 1.2.
+
+> Tip: while Render verifies the `api.iagricultura.ro` custom domain, temporarily
+> set that record to **DNS only** (grey cloud). Once Render shows the domain as
+> verified with a valid certificate, switch it back to **Proxied** (orange cloud).
 
 ### 3. Vercel (frontend)
 
 1. Import the GitHub repo. Set **Root Directory** to `apps/web`.
 2. Framework: Next.js (auto-detected).
 3. Environment variables (Production):
-   - `NEXT_PUBLIC_API_URL=https://api.iagricultura.ro`
-   - `NEXT_PUBLIC_STRICT_API=true` (so the mock-fallback in hooks is disabled in prod).
+   - `NEXT_PUBLIC_API_URL=https://api.iagricultura.ro` (required — the build fails without it).
 4. Add `iagricultura.ro` as a custom domain. Vercel will give a CNAME target; that
    matches the Cloudflare DNS record from step 2.
 
-### 4. VPS (backend)
+### 4. Render (backend)
 
-VPS requirements: Ubuntu 22.04 or Debian 12, Docker + Docker Compose, nginx, 2 GB RAM minimum.
+The API is deployed from the Docker [`apps/api/Dockerfile`](apps/api/Dockerfile)
+using the [`render.yaml`](render.yaml) blueprint at the repo root. The container
+entrypoint binds to the `$PORT` Render injects and, on first boot, bootstraps
+the database (enables `pgcrypto` + `vector`, creates the schema on a fresh DB,
+stamps/upgrades Alembic), seeds the product catalog, and seeds the demo account.
 
-```bash
-# On a fresh VPS
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER     # log out and back in
-sudo apt update && sudo apt install -y nginx
-```
-
-Clone and configure:
-
-```bash
-ssh your-vps
-git clone https://github.com/LuciMurgu/farm-copilot.git
-cd farm-copilot
-
-cp infrastructure/env/api.env.example .env.production
-nano .env.production
-```
-
-Generate the three required secrets:
-
-```bash
-# Session secret (32 hex)
-python3 -c "import secrets; print(secrets.token_hex(32))"
-
-# ANAF encryption key (Fernet)
-python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-
-# Supabase URL — copy the transaction pooler URL from Supabase dashboard
-```
-
-Fill these into `.env.production`:
-
-```bash
-DATABASE_URL=postgresql+asyncpg://postgres.xxxx:PASSWORD@aws-eu-west-1.pooler.supabase.com:6543/postgres?ssl=require
-SESSION_SECRET_KEY=<32 hex chars>
-ANAF_ENCRYPTION_KEY=<Fernet key>
-ANAF_CLIENT_ID=<from ANAF SPV>
-ANAF_CLIENT_SECRET=<from ANAF SPV>
-ANAF_REDIRECT_URI=https://api.iagricultura.ro/anaf/callback
-ANAF_TEST_MODE=false
-ANAF_SYNC_ENABLED=true
-ANAF_SYNC_INTERVAL_SECONDS=14400
-FRONTEND_URL=https://iagricultura.ro
-ENV=production
-```
-
-### 5. nginx on the VPS
-
-Copy [`infrastructure/nginx/iagricultura.ro.conf`](infrastructure/nginx/iagricultura.ro.conf) to nginx:
-
-```bash
-sudo cp infrastructure/nginx/iagricultura.ro.conf /etc/nginx/sites-available/iagricultura.ro
-sudo ln -sf /etc/nginx/sites-available/iagricultura.ro /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-### 6. Firewall
-
-```bash
-sudo ufw allow ssh
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw deny 5432/tcp
-sudo ufw deny 8000/tcp
-sudo ufw enable
-```
+1. Render Dashboard > **New > Blueprint** and pick this repo. Render reads
+   `render.yaml` and creates the `farm-copilot-api` web service.
+   - If you prefer manual setup: **New > Web Service**, Language **Docker**,
+     Dockerfile path `apps/api/Dockerfile`, Docker build context `apps/api`,
+     health check path `/health`, plan **Starter** (the image bundles torch, so
+     avoid the free tier).
+2. Set the secret env vars (the rest come from `render.yaml`):
+   - `DATABASE_URL` — the Supabase transaction pooler URL (asyncpg form):
+     `postgresql+asyncpg://postgres.xxxx:PASSWORD@aws-eu-west-1.pooler.supabase.com:6543/postgres?ssl=require`
+   - `DEMO_USER_PASSWORD` — optional; defaults to `demo1234` if unset.
+   - `ANAF_ENCRYPTION_KEY` — only needed if you later enable ANAF.
+   - `SESSION_SECRET_KEY` is auto-generated by Render (`generateValue: true`).
+3. **Settings > Custom Domains**: add `api.iagricultura.ro`. Render shows the
+   CNAME target — use it in the Cloudflare record from step 2 (Cloudflare).
 
 ---
 
 ## First deploy
 
-```bash
-cd ~/farm-copilot
+Render builds the image and starts the container automatically. No manual
+migration step is required — the bootstrap runs on startup.
 
-# Run migrations against the direct Supabase connection (one-off)
-docker compose -f infrastructure/docker-compose.prod.yml --env-file .env.production run --rm api uv run alembic upgrade head
-
-# Start the API
-docker compose -f infrastructure/docker-compose.prod.yml --env-file .env.production up -d --build
-
-# Watch logs
-docker compose -f infrastructure/docker-compose.prod.yml logs -f api
-```
-
-You should see:
+Watch the deploy logs in the Render dashboard. You should see:
 
 ```
-INFO  Running database migrations...
-INFO  ANAF auto-sync scheduler started
-INFO  Uvicorn running on http://0.0.0.0:8000
+INFO  Preparing database...
+INFO  Fresh database detected — creating schema from models
+INFO  Database ready (action: created)
+INFO  Seeded demo account: demo@iagricultura.ro (farm: Ferma Demo)
+INFO  ANAF auto-sync is disabled (ANAF_SYNC_ENABLED=false)
+INFO  Uvicorn running on http://0.0.0.0:10000
 ```
+
+The demo login is then `demo@iagricultura.ro` / `demo1234` (override via
+`DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD`, or disable with
+`DEMO_SEED_ENABLED=false` for a real-data launch).
 
 For Vercel, push to your `main` branch and Vercel auto-deploys.
 
@@ -170,70 +126,88 @@ For Vercel, push to your `main` branch and Vercel auto-deploys.
 ## Verify
 
 ```bash
-# From VPS
-curl http://localhost:8000/health
+# Render-internal URL (before the custom domain resolves)
+curl https://farm-copilot-api.onrender.com/health
 
-# From your laptop
+# Through Cloudflare, once DNS is set
 curl https://api.iagricultura.ro/health
 curl https://iagricultura.ro
 ```
 
-Open `https://iagricultura.ro` and register your account. Upload a test invoice.
+Open `https://iagricultura.ro`. You should be redirected to `/login`. Sign in
+with the seeded demo account (`demo@iagricultura.ro` / `demo1234`) and confirm
+the dashboard loads with visible "Date demo" indicators on the mock surfaces.
 
 ---
 
 ## Updating
 
-```bash
-ssh your-vps
-cd ~/farm-copilot
-git pull
-docker compose -f infrastructure/docker-compose.prod.yml --env-file .env.production run --rm api uv run alembic upgrade head
-docker compose -f infrastructure/docker-compose.prod.yml --env-file .env.production up -d --build
-```
-
-Vercel updates automatically when you push.
+Push to `main`. Render rebuilds the API and Vercel redeploys the web app
+automatically (`autoDeploy: true`). Startup re-runs any pending migrations.
 
 ---
 
 ## Backups
 
 Supabase handles point-in-time recovery on Pro tier. On the free tier, run a
-weekly logical dump:
+weekly logical dump from any machine with `psql`/`pg_dump` and the direct
+connection string:
 
 ```bash
-docker run --rm postgres:16-alpine pg_dump "$DATABASE_URL_DIRECT" > backup_$(date +%Y%m%d).sql
+pg_dump "$DATABASE_URL_DIRECT" > backup_$(date +%Y%m%d).sql
 ```
 
-Store backups outside the VPS.
+Store backups off-platform.
 
 ---
 
 ## Troubleshooting
 
-**App won't start, migration error.**
-Run migrations explicitly:
-```bash
-docker compose -f infrastructure/docker-compose.prod.yml --env-file .env.production run --rm api uv run alembic upgrade head
-```
+**App won't start / build fails on Render.**
+Open the Render service logs. The bootstrap logs `Preparing database...` then
+`Database ready (action: ...)`. A connection error there means `DATABASE_URL`
+is wrong (must be the asyncpg transaction-pooler URL with `?ssl=require`).
 
-**502 Bad Gateway.**
-Check that the API container is up and listening on 8000:
-```bash
-docker compose -f infrastructure/docker-compose.prod.yml ps
-curl -v http://localhost:8000/health
-```
+**502 / service unavailable.**
+Confirm the service is "Live" in Render and that it bound to `$PORT` — the logs
+should end with `Uvicorn running on http://0.0.0.0:10000`. The health check
+path is `/health`.
 
 **Cookie not set after login from Vercel.**
-Verify `SessionMiddleware` is configured with `domain=".iagricultura.ro"` in
-[`apps/api/src/farm_copilot/api/app.py`](apps/api/src/farm_copilot/api/app.py),
-plus `same_site="lax"` and `https_only=True`.
+The session cookie is hardened from config in
+[`apps/api/src/farm_copilot/api/app.py`](apps/api/src/farm_copilot/api/app.py):
+in production it is `Secure`, `same_site="lax"`, and scoped to
+`SESSION_COOKIE_DOMAIN`. Set `SESSION_COOKIE_DOMAIN=.iagricultura.ro` so the
+SPA on `iagricultura.ro` sends the cookie to `api.iagricultura.ro`.
 
-**Frontend shows mock data in production.**
-`NEXT_PUBLIC_STRICT_API=true` must be set in Vercel. Otherwise hooks like
-[`apps/web/src/hooks/use-invoices.ts`](apps/web/src/hooks/use-invoices.ts) silently
-fall back to mock data on API errors.
+**Frontend shows demo data.**
+This is expected for the showcase build: surfaces still backed by mock fixtures
+render a visible "Date demo" indicator (see
+[`apps/web/src/components/shared/demo-badge.tsx`](apps/web/src/components/shared/demo-badge.tsx)).
+The invoices list calls the real API and only falls back to labeled demo data if
+the API is unreachable.
 
 **Scheduler not running.**
-Look for `ANAF auto-sync scheduler started` in API logs. Requires `ANAF_SYNC_ENABLED=true`
-and a single Uvicorn worker (default in `apps/api/src/farm_copilot/api/production.py`).
+Expected for the demo: with `ANAF_SYNC_ENABLED=false` the logs show
+`ANAF auto-sync is disabled`. To enable it (real-data launch), set
+`ANAF_SYNC_ENABLED=true`, provide the ANAF credentials + `ANAF_ENCRYPTION_KEY`,
+and run on a single Uvicorn worker (the default). Note: managed platforms that
+spin down on idle will pause the scheduler; use a VPS for always-on sync.
+
+---
+
+## Alternative: VPS (real-data launch with always-on ANAF)
+
+Render fits the stateless demo. For continuous ANAF auto-sync you want an
+always-on host. The repo still ships the VPS assets:
+
+- [`infrastructure/docker-compose.prod.yml`](infrastructure/docker-compose.prod.yml) — runs the API container.
+- [`infrastructure/nginx/iagricultura.ro.conf`](infrastructure/nginx/iagricultura.ro.conf) — reverse proxy for `api.iagricultura.ro`.
+- [`infrastructure/env/api.env.example`](infrastructure/env/api.env.example) — full env template (copy to `.env.production`).
+
+On a VPS (Ubuntu 22.04 / Debian 12, Docker + nginx, 2 GB RAM): install Docker,
+fill `.env.production` (including the ANAF credentials and
+`ANAF_SYNC_ENABLED=true`), then
+`docker compose -f infrastructure/docker-compose.prod.yml --env-file .env.production up -d --build`.
+Point the Cloudflare `api.iagricultura.ro` record to the VPS IP (A record)
+instead of the Render CNAME.

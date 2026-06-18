@@ -52,8 +52,8 @@ ENV TRANSFORMERS_CACHE="/app/.cache/transformers"
 
 EXPOSE 8000
 
-# Health check
+# Health check (honors $PORT when the platform injects one, defaults to 8000)
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD python -c "import httpx; r = httpx.get('http://localhost:8000/health'); r.raise_for_status()"
+    CMD python -c "import os, httpx; p = os.environ.get('PORT', '8000'); r = httpx.get(f'http://localhost:{p}/health'); r.raise_for_status()"
 
 CMD ["python", "-m", "farm_copilot.api.production"]

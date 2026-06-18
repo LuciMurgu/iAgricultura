@@ -18,6 +18,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-}
       FRONTEND_URL: ${FRONTEND_URL}
       ENV: ${ENV:-production}
 
@@ -28,6 +29,12 @@ services:
       ANAF_TEST_MODE: ${ANAF_TEST_MODE:-false}
       ANAF_SYNC_ENABLED: ${ANAF_SYNC_ENABLED:-true}
       ANAF_SYNC_INTERVAL_SECONDS: ${ANAF_SYNC_INTERVAL_SECONDS:-14400}
+
+      DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-true}
+      DEMO_USER_EMAIL: ${DEMO_USER_EMAIL:-demo@iagricultura.ro}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-demo1234}
+      DEMO_USER_NAME: ${DEMO_USER_NAME:-Cont Demo}
+      DEMO_FARM_NAME: ${DEMO_FARM_NAME:-Ferma Demo}
 
       TRANSFORMERS_CACHE: /app/.cache/transformers
     volumes:

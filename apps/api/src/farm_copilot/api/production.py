@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import subprocess
 import sys
 
@@ -18,19 +19,37 @@ from farm_copilot.api.logging_config import setup_logging
 logger = logging.getLogger(__name__)
 
 
-def run_migrations() -> None:
-    """Run Alembic migrations before starting the server."""
-    logger.info("Running database migrations...")
+def _run_alembic(*args: str) -> None:
+    """Run an alembic subcommand, exiting the process on failure."""
     result = subprocess.run(
-        ["python", "-m", "alembic", "upgrade", "head"],
+        ["python", "-m", "alembic", *args],
         capture_output=True,
         text=True,
         check=False,
     )
     if result.returncode != 0:
-        logger.error("Migration failed: %s", result.stderr)
+        logger.error("alembic %s failed: %s", " ".join(args), result.stderr)
         sys.exit(1)
-    logger.info("Migrations complete: %s", result.stdout.strip())
+    logger.info("alembic %s: %s", " ".join(args), result.stdout.strip())
+
+
+def run_migrations() -> None:
+    """Bootstrap a fresh database if needed, then apply Alembic migrations."""
+    from farm_copilot.database.bootstrap import (
+        ACTION_CREATED,
+        ACTION_STAMP,
+        bootstrap_database,
+    )
+
+    logger.info("Preparing database...")
+    action = asyncio.run(bootstrap_database())
+
+    if action in (ACTION_CREATED, ACTION_STAMP):
+        # Schema is already at the current model state — record it as head.
+        _run_alembic("stamp", "head")
+    else:
+        _run_alembic("upgrade", "head")
+    logger.info("Database ready (action: %s)", action)
 
 
 async def seed_catalog_if_empty() -> None:
@@ -56,16 +75,27 @@ async def seed_catalog_if_empty() -> None:
             )
 
 
+async def run_seeds() -> None:
+    """Seed catalog and the demo account within a single event loop."""
+    from farm_copilot.database.seed_demo import seed_demo_account
+
+    await seed_catalog_if_empty()
+    await seed_demo_account()
+
+
 def main() -> None:
     """Start production server with auto-migrations."""
     setup_logging()
     run_migrations()
-    asyncio.run(seed_catalog_if_empty())
+    asyncio.run(run_seeds())
 
+    # Render (and most PaaS) inject the listening port via $PORT. Fall back to
+    # 8000 for local/Docker runs that don't set it.
+    port = int(os.environ.get("PORT", "8000"))
     uvicorn.run(
         "farm_copilot.api.app:app",
         host="0.0.0.0",  # noqa: S104
-        port=8000,
+        port=port,
         workers=1,  # Single worker — scheduler runs in-process
         log_level="info",
         access_log=True,

@@ -18,15 +18,27 @@ from sqlalchemy.ext.asyncio import (
 )
 
 
+# Local development default. Used as a sentinel by startup validation so we can
+# refuse to boot in production against the throwaway local database.
+LOCAL_DEFAULT_DATABASE_URL = (
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/farm_copilot"
+)
+
+
 class DatabaseSettings(BaseSettings):
     """Load ``DATABASE_URL`` from the environment (or ``.env`` file)."""
 
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/farm_copilot"
+    database_url: str = LOCAL_DEFAULT_DATABASE_URL
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 _settings = DatabaseSettings()
+
+
+def get_database_url() -> str:
+    """Return the configured database URL (for startup validation/diagnostics)."""
+    return _settings.database_url
 
 engine: AsyncEngine = create_async_engine(
     _settings.database_url,

@@ -32,7 +32,10 @@ class TestMiddlewareConfig:
         from farm_copilot.api.middleware import AuthRedirectMiddleware
 
         assert "/static" in AuthRedirectMiddleware.PUBLIC_PREFIXES
-        assert "/anaf" in AuthRedirectMiddleware.PUBLIC_PREFIXES
+        # /api/v1 has its own per-route auth dependency; HTML /anaf/* is no
+        # longer a public prefix (only the OAuth callback is public).
+        assert "/api/v1" in AuthRedirectMiddleware.PUBLIC_PREFIXES
+        assert "/anaf" not in AuthRedirectMiddleware.PUBLIC_PREFIXES
 
     def test_dashboard_not_public(self) -> None:
         from farm_copilot.api.middleware import AuthRedirectMiddleware
@@ -67,11 +70,20 @@ class TestMiddlewareConfig:
             for p in AuthRedirectMiddleware.PUBLIC_PREFIXES
         )
 
-    def test_anaf_status_is_public(self) -> None:
-        """ANAF paths begin with /anaf prefix → public."""
+    def test_anaf_status_is_not_public(self) -> None:
+        """ANAF status now requires a session (only the OAuth callback is public)."""
         from farm_copilot.api.middleware import AuthRedirectMiddleware
 
-        assert "/anaf/status/123".startswith(AuthRedirectMiddleware.PUBLIC_PREFIXES)
+        assert "/anaf/status/123" not in AuthRedirectMiddleware.PUBLIC_PATHS
+        assert not "/anaf/status/123".startswith(
+            AuthRedirectMiddleware.PUBLIC_PREFIXES
+        )
+
+    def test_anaf_callback_is_public(self) -> None:
+        """The OAuth callback stays public (secured by the state token)."""
+        from farm_copilot.api.middleware import AuthRedirectMiddleware
+
+        assert "/anaf/callback" in AuthRedirectMiddleware.PUBLIC_PATHS
 
     def test_static_is_public(self) -> None:
         from farm_copilot.api.middleware import AuthRedirectMiddleware

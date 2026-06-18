@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -11,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from farm_copilot.api.deps import app_settings
+from farm_copilot.api.deps import app_settings, validate_production_settings
 from farm_copilot.api.logging_config import setup_logging
 from farm_copilot.api.middleware import AuthRedirectMiddleware
 from farm_copilot.api.routes.anaf import router as anaf_router
@@ -37,6 +36,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     """Build and configure the FastAPI application."""
+    # Refuse to boot in production with insecure defaults (no-op in dev).
+    validate_production_settings()
+
     application = FastAPI(
         title="Farm Copilot",
         description="Invoice processing pipeline for Romanian farms",
@@ -46,17 +48,24 @@ def create_app() -> FastAPI:
 
     # Auth redirect middleware (checks session for HTML routes)
     application.add_middleware(AuthRedirectMiddleware)
-    application.add_middleware(
-        SessionMiddleware,
-        secret_key=app_settings.session_secret_key,
-        max_age=86400 * 7,  # 7-day session
-    )
+    # Session cookie. In production it is Secure and scoped to the parent domain
+    # so the Vercel-served SPA can send it on calls to the api subdomain.
+    session_kwargs: dict[str, object] = {
+        "secret_key": app_settings.session_secret_key,
+        "max_age": 86400 * 7,  # 7-day session
+        "same_site": "lax",
+        "https_only": app_settings.session_https_only,
+    }
+    if app_settings.session_cookie_domain:
+        session_kwargs["domain"] = app_settings.session_cookie_domain
+    application.add_middleware(SessionMiddleware, **session_kwargs)
 
-    # CORS for SPA frontend
-    frontend_url = os.getenv("FRONTEND_URL", "")
-    allow_origins = ["http://localhost:3000"]
-    if frontend_url:
-        allow_origins.append(frontend_url)
+    # CORS for SPA frontend. localhost is allowed only in development.
+    allow_origins: list[str] = []
+    if not app_settings.is_production:
+        allow_origins.append("http://localhost:3000")
+    if app_settings.frontend_url:
+        allow_origins.append(app_settings.frontend_url)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=allow_origins,

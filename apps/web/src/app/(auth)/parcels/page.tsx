@@ -15,6 +15,7 @@ import { ParcelMap } from "@/components/parcels/parcel-map";
 import { ParcelCard } from "@/components/parcels/parcel-card";
 import { SensorPanel } from "@/components/parcels/sensor-panel";
 import { EmptyState } from "@/components/shared/empty-state";
+import { DemoDataBanner } from "@/components/shared/demo-badge";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useParcels } from "@/hooks/use-parcels";
@@ -72,7 +73,8 @@ export default function ParcelsPage() {
         }
       />
 
-      <div className="flex-1 p-4 md:p-6 max-w-[1400px]">
+      <div className="flex-1 p-4 md:p-6 max-w-[1400px] space-y-6">
+        <DemoDataBanner message="Senzorii virtuali și datele satelitare sunt simulate (PINNs) în scop demonstrativ." />
         {isLoading ? (
           <ParcelsSkeleton />
         ) : !parcels || parcels.length === 0 ? (

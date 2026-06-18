@@ -27,12 +27,35 @@ const queryClient = new QueryClient({
 });
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  // DEV BYPASS: skip auth check, render app directly
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell>{children}</AppShell>
+      <AuthGate>{children}</AuthGate>
     </QueryClientProvider>
   );
+}
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { user, isInitialized, checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    if (!isInitialized) {
+      void checkAuth();
+    }
+  }, [isInitialized, checkAuth]);
+
+  useEffect(() => {
+    if (isInitialized && !user) {
+      router.replace("/login");
+    }
+  }, [isInitialized, user, router]);
+
+  // Auth check in flight, or about to redirect — show skeleton, never the app.
+  if (!isInitialized || !user) {
+    return <AuthCheckSkeleton />;
+  }
+
+  return <AppShell>{children}</AppShell>;
 }
 
 function AuthCheckSkeleton() {

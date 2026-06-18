@@ -13,9 +13,11 @@ import { StockCard } from "@/components/stock/stock-card";
 import { DieselReport } from "@/components/stock/diesel-report";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Currency } from "@/components/shared/currency";
+import { DemoDataBanner } from "@/components/shared/demo-badge";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStock } from "@/hooks/use-stock";
+import { isDemoData } from "@/lib/mock/feature-gates";
 import { Package } from "lucide-react";
 
 function StockSkeleton() {
@@ -72,6 +74,7 @@ export default function StockPage() {
       />
 
       <div className="flex-1 p-4 md:p-6 space-y-6 max-w-[1200px]">
+        {isDemoData("stock") && <DemoDataBanner />}
         {isLoading ? (
           <StockSkeleton />
         ) : !items || items.length === 0 ? (

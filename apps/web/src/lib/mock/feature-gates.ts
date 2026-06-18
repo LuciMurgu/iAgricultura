@@ -26,23 +26,35 @@ export const FEATURE_GATES = {
    */
   actionFeed: { isReal: false },
 
-  /** GET /api/v1/invoices */
+  /** GET /api/v1/invoices — hook calls the real API, mock only as fallback. */
   invoices: { isReal: true },
 
-  /** GET /api/v1/invoices/:id */
-  invoiceDetail: { isReal: true },
+  /**
+   * GET /api/v1/invoices/:id — detail rail is still mock-backed.
+   * Flip to true once invoice-right-rail.tsx fetches from the API.
+   */
+  invoiceDetail: { isReal: false },
 
-  /** GET /api/v1/stock */
-  stock: { isReal: true },
+  /**
+   * GET /api/v1/stock — hook (use-stock.ts) still returns mock only.
+   * Flip to true once a stock service is wired.
+   */
+  stock: { isReal: false },
 
-  /** GET /api/v1/alerts */
-  alerts: { isReal: true },
+  /**
+   * GET /api/v1/alerts — hook (use-alerts.ts) still returns mock only.
+   * Flip to true once an alert service is wired.
+   */
+  alerts: { isReal: false },
 
   /** GET /api/v1/anaf/status */
   anafSync: { isReal: true },
 
-  /** POST /api/v1/export/saga */
-  sagaExport: { isReal: true },
+  /**
+   * POST /api/v1/export/saga — the export page currently simulates the call.
+   * Flip to true once the bulk export endpoint is wired and downloads a file.
+   */
+  sagaExport: { isReal: false },
 
   // ── MOCKED (no backend yet) ──────────────────────────────────────
 
@@ -90,4 +102,12 @@ export type FeatureGateKey = keyof typeof FEATURE_GATES;
  */
 export function isFeatureReal(key: FeatureGateKey): boolean {
   return FEATURE_GATES[key].isReal;
+}
+
+/**
+ * Returns whether a feature still shows demo/mock data, so the UI can render
+ * a visible "Date demo" indicator. Inverse of isFeatureReal.
+ */
+export function isDemoData(key: FeatureGateKey): boolean {
+  return !FEATURE_GATES[key].isReal;
 }

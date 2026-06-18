@@ -54,14 +54,18 @@ src/
 
 ---
 
-## Feature gates
+## Feature gates and demo data
 
 Hooks like [`hooks/use-invoices.ts`](src/hooks/use-invoices.ts) consult
-`lib/mock/feature-gates.ts` to decide whether to call the real API or fall
-back to mock fixtures.
+[`lib/mock/feature-gates.ts`](src/lib/mock/feature-gates.ts) to decide whether
+to call the real API or fall back to mock fixtures.
 
-In production, `NEXT_PUBLIC_STRICT_API=true` must be set in Vercel so that
-API errors never silently degrade to mock data. See [`DEPLOYMENT.md`](../../DEPLOYMENT.md).
+This is a showcase build: surfaces still backed by mock fixtures render a
+visible "Date demo" indicator via
+[`components/shared/demo-badge.tsx`](src/components/shared/demo-badge.tsx).
+Use `isDemoData(key)` / `isFeatureReal(key)` to drive that label. When a
+feature is wired to the backend, flip its gate to `isReal: true` and the badge
+disappears automatically.
 
 ---
 

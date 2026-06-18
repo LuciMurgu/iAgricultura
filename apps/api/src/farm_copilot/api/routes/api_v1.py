@@ -566,6 +566,9 @@ async def api_anaf_status(
     session: AsyncSession = Depends(get_db),
 ) -> AnafStatusResponse:
     """ANAF connection status for a farm."""
+    if farm_id != api_user.farm_id:
+        raise HTTPException(status_code=403, detail="Acces interzis la această fermă")
+
     token = await get_anaf_token_by_farm(session, farm_id=farm_id)
 
     if token is None:
@@ -606,6 +609,9 @@ async def api_anaf_sync(
     session: AsyncSession = Depends(get_db),
 ) -> AnafSyncResponse:
     """Trigger manual ANAF sync."""
+    if farm_id != api_user.farm_id:
+        raise HTTPException(status_code=403, detail="Acces interzis la această fermă")
+
     token = await get_anaf_token_by_farm(session, farm_id=farm_id)
     if token is None:
         raise HTTPException(

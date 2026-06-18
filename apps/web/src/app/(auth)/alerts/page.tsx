@@ -12,9 +12,11 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { AlertCard } from "@/components/alerts/alert-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { DemoDataBanner } from "@/components/shared/demo-badge";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAlerts } from "@/hooks/use-alerts";
+import { isDemoData } from "@/lib/mock/feature-gates";
 import { CheckCircle2, Bell } from "lucide-react";
 import type { Alert } from "@/types/alerts";
 
@@ -101,6 +103,7 @@ export default function AlertsPage() {
       />
 
       <div className="flex-1 p-4 md:p-6 space-y-6 max-w-[900px]">
+        {isDemoData("alerts") && <DemoDataBanner />}
         {isLoading ? (
           <AlertsSkeleton />
         ) : alerts.length === 0 ? (

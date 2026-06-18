@@ -19,6 +19,7 @@ import { ActionFeedList } from "@/components/dashboard/action-feed-list";
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { RelativeTime } from "@/components/shared/relative-time";
+import { DemoDataBanner } from "@/components/shared/demo-badge";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, Wifi, WifiOff, Inbox, HelpCircle, ArrowRight, Wrench, LayoutDashboard } from "lucide-react";
@@ -102,6 +103,8 @@ export default function DashboardPage() {
       />
 
       <div className="flex-1 p-4 md:p-6 space-y-6 max-w-[1200px]">
+        <DemoDataBanner message="Indicatorii, feedul de acțiuni și cardurile de mai jos folosesc date demonstrative." />
+
         {/* ── Greeting ────────────────────────────────────────────── */}
         <div className="space-y-1">
           <h2 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">

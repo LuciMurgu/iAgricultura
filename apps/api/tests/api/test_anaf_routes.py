@@ -28,6 +28,17 @@ def _make_session_cookie(data: dict) -> dict:
     return {"session": signed}
 
 
+def _auth_cookies(farm_id: object) -> dict:
+    """Signed session cookie for a logged-in user owning ``farm_id``.
+
+    The auth middleware requires ``user_id`` and the /anaf routes additionally
+    require the session ``farm_id`` to match the path (anti-IDOR).
+    """
+    return _make_session_cookie(
+        {"user_id": _FAKE_USER_ID, "farm_id": str(farm_id)}
+    )
+
+
 @pytest.fixture
 def _mock_db():
     """Mock the database dependency."""
@@ -68,6 +79,7 @@ class TestAnafRoutes:
             async with AsyncClient(
                 transport=ASGITransport(app=app),
                 base_url="http://test",
+                cookies=_auth_cookies(farm_id),
             ) as client:
                 response = await client.get(
                     f"/anaf/status/{farm_id}"
@@ -75,6 +87,41 @@ class TestAnafRoutes:
 
             assert response.status_code == 200
             assert "Not Connected" in response.text
+
+    @pytest.mark.asyncio
+    async def test_status_requires_authentication(
+        self, _mock_db: AsyncMock
+    ) -> None:
+        """GET /anaf/status — no session → redirect to /login."""
+        farm_id = uuid4()
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            follow_redirects=False,
+        ) as client:
+            response = await client.get(f"/anaf/status/{farm_id}")
+
+        assert response.status_code == 302
+        assert response.headers.get("location") == "/login"
+
+    @pytest.mark.asyncio
+    async def test_status_other_farm_forbidden(
+        self, _mock_db: AsyncMock
+    ) -> None:
+        """GET /anaf/status — logged-in user, different farm → 403."""
+        own_farm = uuid4()
+        other_farm = uuid4()
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+            cookies=_auth_cookies(own_farm),
+            follow_redirects=False,
+        ) as client:
+            response = await client.get(f"/anaf/status/{other_farm}")
+
+        assert response.status_code == 403
 
     @pytest.mark.asyncio
     async def test_authorize_missing_cif_redirects_with_error(
@@ -86,6 +133,7 @@ class TestAnafRoutes:
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test",
+            cookies=_auth_cookies(farm_id),
             follow_redirects=False,
         ) as client:
             response = await client.get(
@@ -105,6 +153,7 @@ class TestAnafRoutes:
         async with AsyncClient(
             transport=ASGITransport(app=app),
             base_url="http://test",
+            cookies=_auth_cookies(farm_id),
             follow_redirects=False,
         ) as client:
             response = await client.get(
@@ -131,6 +180,7 @@ class TestAnafRoutes:
             async with AsyncClient(
                 transport=ASGITransport(app=app),
                 base_url="http://test",
+                cookies=_auth_cookies(farm_id),
                 follow_redirects=False,
             ) as client:
                 response = await client.post(

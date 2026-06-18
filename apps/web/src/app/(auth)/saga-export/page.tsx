@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Currency } from "@/components/shared/currency";
 import { EmptyState } from "@/components/shared/empty-state";
+import { DemoDataBanner } from "@/components/shared/demo-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInvoices } from "@/hooks/use-invoices";
 import {
@@ -57,10 +58,10 @@ export default function SagaExportPage() {
       // const blob = await response.blob();
       // triggerDownload(blob, 'saga-export.xml');
 
-      // Simulate export
+      // Simulate export (demo — the real bulk export endpoint is not yet wired)
       await new Promise((r) => setTimeout(r, 2000));
-      toast.success("Export SAGA generat", {
-        description: `${completedCount} facturi exportate în format SAGA C.`,
+      toast.success("Export SAGA simulat (demo)", {
+        description: `Demonstrație: ${completedCount} facturi ar fi exportate în format SAGA C. Generarea reală a fișierului va fi disponibilă la lansare.`,
         duration: 5000,
       });
     } catch {
@@ -83,6 +84,7 @@ export default function SagaExportPage() {
       />
 
       <div className="flex-1 p-4 md:p-6 space-y-6 max-w-[900px]">
+        <DemoDataBanner message="Exportul SAGA este o demonstrație: butonul simulează generarea, iar istoricul de mai jos conține exemple. Descărcarea reală a fișierului va fi disponibilă la lansare." />
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-[200px] rounded-xl" />

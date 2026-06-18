@@ -14,6 +14,7 @@ import { ClusterSummary } from "@/components/cooperative/cluster-summary";
 import { BidCard } from "@/components/cooperative/bid-card";
 import { BenefitCalculator } from "@/components/cooperative/benefit-calculator";
 import { EmptyState } from "@/components/shared/empty-state";
+import { DemoDataBanner } from "@/components/shared/demo-badge";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { mockCooperative } from "@/lib/mock/data/cooperative";
@@ -77,6 +78,8 @@ export default function CooperativePage() {
       />
 
       <div className="flex-1 p-4 md:p-6 space-y-6 max-w-[1200px]">
+        <DemoDataBanner message="Clusterele cooperativei și ofertele de licitare sunt exemple demonstrative." />
+
         {/* Cluster summary */}
         <ClusterSummary cluster={cluster} />
 

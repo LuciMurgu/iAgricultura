@@ -12,6 +12,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { LeaseCard } from "@/components/arenda/lease-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { DemoDataBanner } from "@/components/shared/demo-badge";
 import { Badge } from "@/components/ui/badge";
 import { Currency } from "@/components/shared/currency";
 import { mockArenda } from "@/lib/mock/data/arenda";
@@ -48,6 +49,7 @@ export default function ArendaPage() {
       />
 
       <div className="flex-1 p-4 md:p-6 space-y-4 max-w-[900px]">
+        <DemoDataBanner message="Contractele de arendă afișate sunt exemple demonstrative." />
         {leases.length === 0 ? (
           <EmptyState
             icon={FileText}

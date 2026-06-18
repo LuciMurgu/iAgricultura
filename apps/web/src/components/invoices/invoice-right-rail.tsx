@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Currency } from "@/components/shared/currency";
 import { ConfidenceBadge } from "@/components/shared/confidence-badge";
+import { DemoBadge } from "@/components/shared/demo-badge";
 import {
   useRightRailStore,
   type RightRailTab,
@@ -48,9 +49,12 @@ export function InvoiceRightRail() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-slate-200 bg-white">
-        <p className="text-sm font-semibold text-slate-900 truncate">
-          {invoice.supplier_name}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-slate-900 truncate">
+            {invoice.supplier_name}
+          </p>
+          <DemoBadge />
+        </div>
         <p className="text-xs text-slate-500 font-mono">
           {invoice.invoice_number ?? "—"} · <Currency value={invoice.total_amount ?? 0} />
         </p>

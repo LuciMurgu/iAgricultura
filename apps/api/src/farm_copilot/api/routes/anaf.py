@@ -6,7 +6,7 @@ import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,6 +31,17 @@ from farm_copilot.worker.scheduler import scheduler_settings
 
 router = APIRouter(prefix="/anaf", tags=["anaf"])
 
+
+def _require_own_farm(request: Request, farm_id: UUID) -> None:
+    """Ensure the logged-in session owns the farm in the path (anti-IDOR).
+
+    The auth middleware already guarantees a session exists for these routes;
+    this additionally prevents a logged-in user from acting on another farm.
+    """
+    session_farm = request.session.get("farm_id")
+    if session_farm is None or UUID(session_farm) != farm_id:
+        raise HTTPException(status_code=403, detail="Acces interzis la această fermă")
+
 # ---------------------------------------------------------------------------
 # OAuth state store (module-level dict — CSRF protection)
 # DEC-0013: Acceptable for single-server MVP.
@@ -52,6 +63,7 @@ async def anaf_status(
     session: AsyncSession = Depends(get_db),
 ) -> HTMLResponse:
     """Show ANAF connection status for a farm."""
+    _require_own_farm(request, farm_id)
     token = await get_anaf_token_by_farm(session, farm_id=farm_id)
 
     context: dict = {
@@ -118,11 +130,13 @@ async def anaf_status(
 
 @router.get("/authorize/{farm_id}")
 async def anaf_authorize(
+    request: Request,
     farm_id: UUID,
     cif: str = "",
     session: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
     """Start OAuth flow → redirect to ANAF login page."""
+    _require_own_farm(request, farm_id)
     if not cif.strip():
         return RedirectResponse(
             url=(
@@ -255,10 +269,12 @@ async def anaf_callback(
 
 @router.post("/sync/{farm_id}")
 async def anaf_sync_trigger(
+    request: Request,
     farm_id: UUID,
     session: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
     """Trigger a manual ANAF sync."""
+    _require_own_farm(request, farm_id)
     token = await get_anaf_token_by_farm(session, farm_id=farm_id)
     if token is None:
         return RedirectResponse(
@@ -303,10 +319,12 @@ async def anaf_sync_trigger(
 
 @router.post("/disconnect/{farm_id}")
 async def anaf_disconnect(
+    request: Request,
     farm_id: UUID,
     session: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
     """Revoke ANAF connection for a farm."""
+    _require_own_farm(request, farm_id)
     await delete_anaf_token(session, farm_id=farm_id)
     await session.commit()
 

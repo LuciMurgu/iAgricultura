@@ -65,7 +65,18 @@ function createApiClient(): AxiosInstance {
           : undefined;
 
       if (status === 401) {
-        // Session expired or unauthenticated — redirect handled by auth store
+        // Session expired or unauthenticated. Send the user back to /login,
+        // except for the auth probes themselves (the store interprets their
+        // 401 as "not logged in") and when we are already on the login page.
+        const url = error.config?.url ?? "";
+        const isAuthProbe = url.includes("/auth/me") || url.includes("/auth/login");
+        if (
+          typeof window !== "undefined" &&
+          !isAuthProbe &&
+          window.location.pathname !== "/login"
+        ) {
+          window.location.assign("/login");
+        }
         return Promise.reject(
           new ApiError("Sesiune expirată. Vă rugăm să vă autentificați.", 401, detail),
         );

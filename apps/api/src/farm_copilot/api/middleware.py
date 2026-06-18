@@ -10,8 +10,11 @@ from starlette.responses import RedirectResponse, Response
 class AuthRedirectMiddleware(BaseHTTPMiddleware):
     """Redirect unauthenticated users to /login for protected routes."""
 
-    PUBLIC_PATHS = {"/login", "/register", "/health"}
-    PUBLIC_PREFIXES = ("/static", "/anaf", "/api/v1")
+    # "/anaf/callback" is public because ANAF redirects the browser back to it
+    # at the end of the OAuth flow; it is secured by the one-time OAuth state
+    # token, not by the session. All other /anaf/* routes require a session.
+    PUBLIC_PATHS = {"/login", "/register", "/health", "/anaf/callback"}
+    PUBLIC_PREFIXES = ("/static", "/api/v1")
 
     async def dispatch(
         self, request: Request, call_next: object

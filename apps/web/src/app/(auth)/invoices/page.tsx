@@ -14,6 +14,7 @@ import { InvoiceFilters } from "@/components/invoices/invoice-filters";
 import { InvoiceTable } from "@/components/invoices/invoice-table";
 import { InvoiceTableSkeleton } from "@/components/invoices/invoice-table-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
+import { DemoDataBanner } from "@/components/shared/demo-badge";
 import { Badge } from "@/components/ui/badge";
 import { useInvoices } from "@/hooks/use-invoices";
 import { useAnafStatus } from "@/hooks/use-anaf-status";
@@ -48,7 +49,7 @@ export default function InvoicesPage() {
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [supplierSearch, setSupplierSearch] = React.useState("");
 
-  const { data, isLoading } = useInvoices({ status: statusFilter });
+  const { data, isLoading, isDemo } = useInvoices({ status: statusFilter });
 
   // Client-side supplier filter (backend will handle this when REAL)
   const filteredItems = React.useMemo(() => {
@@ -81,6 +82,10 @@ export default function InvoicesPage() {
       />
 
       <div className="flex-1 p-4 md:p-6 space-y-4 max-w-[1400px]">
+        {!isLoading && isDemo && (
+          <DemoDataBanner message="Aceste facturi sunt exemple demonstrative. Conectați-vă la ANAF SPV pentru a afișa facturile reale." />
+        )}
+
         {/* Filter bar */}
         <InvoiceFilters
           statusFilter={statusFilter}

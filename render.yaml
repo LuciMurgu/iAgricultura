@@ -1,0 +1,53 @@
+# Render blueprint — Farm Copilot API (demo deploy)
+#
+# Deploys the FastAPI backend as a Docker web service. The Next.js frontend is
+# hosted on Vercel and the database on Supabase (set DATABASE_URL below), so
+# they are not defined here.
+#
+# Usage: Render Dashboard > New > Blueprint > pick this repo. Then set the
+# secret env vars marked `sync: false` (DATABASE_URL, demo password, and the
+# ANAF key only if you later enable ANAF).
+services:
+  - type: web
+    name: farm-copilot-api
+    runtime: docker
+    # Paths are relative to the repo root.
+    dockerfilePath: apps/api/Dockerfile
+    dockerContext: apps/api
+    plan: starter # 512 MB; the image bundles torch, so avoid the free tier.
+    region: frankfurt # Closest Render region to Romania.
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://iagricultura.ro
+      - key: SESSION_COOKIE_DOMAIN
+        value: .iagricultura.ro
+      # Render generates a strong secret and keeps it stable across deploys.
+      - key: SESSION_SECRET_KEY
+        generateValue: true
+      # Supabase transaction-pooler URL (asyncpg). Set in the dashboard.
+      - key: DATABASE_URL
+        sync: false
+      # ANAF disabled for the demo — no real credentials required.
+      - key: ANAF_SYNC_ENABLED
+        value: "false"
+      - key: ANAF_TEST_MODE
+        value: "true"
+      # Only needed if ANAF is later enabled. Generate with:
+      #   python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      - key: ANAF_ENCRYPTION_KEY
+        sync: false
+      # Demo account seeded on first boot so the login walkthrough works.
+      - key: DEMO_SEED_ENABLED
+        value: "true"
+      - key: DEMO_USER_EMAIL
+        value: demo@iagricultura.ro
+      - key: DEMO_USER_PASSWORD
+        sync: false # Defaults to "demo1234" in code if left unset.
+      - key: DEMO_USER_NAME
+        value: Cont Demo
+      - key: DEMO_FARM_NAME
+        value: Ferma Demo

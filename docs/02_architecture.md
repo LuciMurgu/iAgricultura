@@ -129,6 +129,9 @@ flowchart LR
   Page --> Cache
 ```
 
-Hooks default to **strict mode** (real API only) when `NEXT_PUBLIC_STRICT_API=true`.
-In dev, several hooks fall back to mock fixtures from `lib/mock/` if the API errors.
-Production must always run with strict mode on.
+This is a showcase build. Each feature has a gate in `lib/mock/feature-gates.ts`
+marking whether it is wired to the real API or still backed by mock fixtures.
+Any surface showing mock data renders a visible "Date demo" indicator
+(`components/shared/demo-badge.tsx`), so demo data is never presented as real.
+The invoices hook calls the real API and only falls back to (labeled) demo data
+when the API is unreachable.

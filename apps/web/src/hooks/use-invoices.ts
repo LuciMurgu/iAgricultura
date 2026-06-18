@@ -4,6 +4,7 @@
  * Hook: useInvoices — fetches invoice list from real API or mock data.
  * Gate: invoices (REAL — falls back to mock if backend returns empty or errors).
  */
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { isFeatureReal } from "@/lib/mock/feature-gates";
 import { mockInvoices } from "@/lib/mock/data/invoices";
@@ -19,8 +20,11 @@ interface InvoiceQueryParams {
 
 export function useInvoices(params: InvoiceQueryParams = {}) {
   const gate = isFeatureReal("invoices");
+  // Tracks whether the data currently shown came from mock fixtures rather
+  // than the live API, so the UI can flag it honestly as demo data.
+  const [isDemo, setIsDemo] = useState(!gate);
 
-  return useQuery<InvoiceListResponse>({
+  const query = useQuery<InvoiceListResponse>({
     queryKey: ["invoices", params],
     queryFn: async () => {
       if (gate) {
@@ -35,15 +39,19 @@ export function useInvoices(params: InvoiceQueryParams = {}) {
           const parsed = InvoiceListResponseSchema.parse(response.data);
           // If real API returns data, use it; if empty, fall through to mock
           if (parsed.items.length > 0 || parsed.total === 0) {
+            setIsDemo(false);
             return parsed;
           }
         } catch {
           // Fall through to mock on error
         }
       }
+      setIsDemo(true);
       const raw = mockInvoices.list(params);
       return InvoiceListResponseSchema.parse(raw);
     },
     staleTime: 30 * 1000, // 30s — invoices change frequently
   });
+
+  return { ...query, isDemo };
 }
