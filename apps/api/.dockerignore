@@ -1,0 +1,15 @@
+.git
+.venv
+.env
+.env.production
+.ruff_cache
+.pytest_cache
+.pyright
+__pycache__
+*.pyc
+tests/
+docs/
+evals/
+*.md
+!README.md
+deploy/

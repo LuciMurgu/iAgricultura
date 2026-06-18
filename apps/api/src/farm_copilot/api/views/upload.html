@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block title %}Upload Invoice — Farm Copilot{% endblock %}
+{% block content %}
+<h1>Upload e-Factura XML</h1>
+<p class="text-muted mb-2">Upload a Romanian e-Factura UBL 2.1 XML file for processing.</p>
+
+{% if error %}
+<div class="error-msg">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+        <label for="file" class="text-sm text-muted mb-1" style="display:block;">Select XML file</label>
+        <input type="file" id="file" name="file" accept=".xml" required>
+        <button type="submit" class="btn btn-primary">Upload &amp; Process</button>
+    </form>
+</div>
+
+<div class="card text-sm text-muted">
+    <h3>Pipeline Steps</h3>
+    <ol style="padding-left: 1.25rem; line-height: 1.8;">
+        <li>XML Extraction (parse e-Factura)</li>
+        <li>Line Classification (stockable / service / charge)</li>
+        <li>Product Normalization (alias matching)</li>
+        <li>Benchmark Comparison (price analysis)</li>
+        <li>Invoice Validation (rules + duplicate check)</li>
+        <li>Stock-In (eligible lines → inventory)</li>
+        <li>Alert Derivation (suspicious patterns)</li>
+        <li>Explanation Derivation (human-readable)</li>
+        <li>Status Resolution</li>
+    </ol>
+</div>
+{% endblock %}

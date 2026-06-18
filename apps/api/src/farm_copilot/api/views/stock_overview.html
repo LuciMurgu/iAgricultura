@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+{% block title %}Stock Overview — Farm Copilot{% endblock %}
+{% block content %}
+
+<div class="flex-between mb-2">
+    <div>
+        <h1>📦 Stock Overview</h1>
+        <p class="text-muted text-sm">{{ total_products }} product{{ 's' if total_products != 1 }} tracked</p>
+    </div>
+</div>
+
+{% if balances %}
+<div class="card" style="padding:0; overflow-x:auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Unit</th>
+                <th style="text-align:right;">Stock In</th>
+                <th style="text-align:right;">Stock Out</th>
+                <th style="text-align:right;">Balance</th>
+                <th>Last Movement</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in balances %}
+            <tr>
+                <td>
+                    <a href="/stock/{{ b.canonical_product_id }}">{{ b.product_name }}</a>
+                </td>
+                <td>{{ b.category or '—' }}</td>
+                <td><span class="badge badge-muted">{{ b.unit }}</span></td>
+                <td style="text-align:right; color:#198754;">{{ "%.2f"|format(b.total_in) }}</td>
+                <td style="text-align:right; color:#dc3545;">{{ "%.2f"|format(b.total_out) }}</td>
+                <td style="text-align:right; font-weight:700;">
+                    {% set bal = b.balance %}
+                    <span style="color:{{ '#198754' if bal > 0 else '#dc3545' if bal < 0 else 'var(--text-muted)' }};">
+                        {{ "%.2f"|format(bal) }}
+                    </span>
+                </td>
+                <td class="text-sm text-muted">
+                    {{ b.last_movement_at.strftime('%d.%m.%Y') if b.last_movement_at else '—' }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:3rem;">
+    <p style="font-size:1.5rem; margin-bottom:0.5rem;">📦</p>
+    <h2 style="margin-bottom:0.5rem;">No stock movements recorded yet</h2>
+    <p class="text-muted mb-2">Stock is updated automatically when invoices are processed.</p>
+    <div style="display:flex; gap:1rem; justify-content:center;">
+        <a href="/upload" class="btn btn-primary">Upload Invoice</a>
+        <a href="/invoices" class="btn btn-outline">View Invoices</a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

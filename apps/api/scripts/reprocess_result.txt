@@ -1,0 +1,18 @@
+=== LOGIN ===
+  Login status: 401
+  Tried 'password': 401
+  Tried 'parola': 401
+  Tried 'test': 401
+  Tried 'lucian': 401
+  Login failed: {"detail":"Email sau parolă incorectă"}
+  Will try direct DB reprocessing instead
+
+=== Reprocessing cf52a8c4-a5a6-4c53-911e-461b7ebf7b35 ===
+  Done
+
+=== Reprocessing 5a44a5df-498b-4527-87fa-9855a894c97b ===
+  Done
+
+=== POST-REPROCESS STATUS ===
+  cf52a8c4-a5a6-4c53-911e-461b7ebf7b35  status=needs_review  sup=SC Agro Distribuție SRL  inv#=FCT-2026-001234  total=15470.00
+  5a44a5df-498b-4527-87fa-9855a894c97b  status=needs_review  sup=SC Agro Distribuție SRL  inv#=FCT-2026-001234  total=15470.00

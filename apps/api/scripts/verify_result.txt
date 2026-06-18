@@ -1,0 +1,21 @@
+=== USERS ===
+  bf328b04-e948-46bc-bea0-817e4f44b681  email=test@farmcopilot.local  name=Ion Popescu
+  804a7263-bb98-4972-ac65-ee8d4110b415  email=lucian@agrounu.ro  name=Lucian Murgu
+
+=== FARM MEMBERSHIPS ===
+  user=test@farmcopilot.local  farm=Ferma E2E Test (15361f86-ced6-4d8b-ba9d-d2a69333140b)  role=owner
+  user=lucian@agrounu.ro  farm=Ferma Copou (92d7d009-47d1-4e63-ba6a-01d06edfb6b8)  role=owner
+
+=== FINAL INVOICE STATE ===
+  c8227b2f-6557-495d-b175-a59726adbbb0  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=completed        sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00  lines=2
+  6aec80ba-5aa8-43b2-83ea-ee51a7c01808  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=completed        sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00  lines=2
+  e16fafbf-d59e-425c-aa25-df9ceda93120  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=needs_review     sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00  lines=2
+  cf52a8c4-a5a6-4c53-911e-461b7ebf7b35  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=needs_review     sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00  lines=2
+  5a44a5df-498b-4527-87fa-9855a894c97b  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=needs_review     sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00  lines=2
+
+=== API HEALTH CHECK ===
+  /health: 200 {"status":"healthy","database":"connected"}
+
+=== API /api/v1/invoices (no auth) ===
+  Status: 401
+  Body: {"detail":"Autentificare necesară"}

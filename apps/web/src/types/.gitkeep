@@ -1,0 +1,4 @@
+// Zod types / schemas — implemented in Prompt 04
+// auth.ts | invoices.ts | stock.ts | alerts.ts | parcels.ts
+// cooperative.ts | arenda.ts | common.ts
+export {};

@@ -1,0 +1,45 @@
+======================================================================
+FARM COPILOT — INVOICE FIX REPORT
+======================================================================
+
+Target farm: 92d7d009-47d1-4e63-ba6a-01d06edfb6b8
+Total invoices: 5
+All on target farm: True
+
+                                    ID           Status                        Supplier                Inv#         Total  Lines  Alerts
+---------------------------------------------------------------------------------------------------------------------------------------
+  c8227b2f-6557-495d-b175-a59726adbbb0        completed         SC Agro Distribuție SRL     FCT-2026-001234      15470.00      2       0
+  6aec80ba-5aa8-43b2-83ea-ee51a7c01808        completed         SC Agro Distribuție SRL     FCT-2026-001234      15470.00      2       0
+  e16fafbf-d59e-425c-aa25-df9ceda93120     needs_review         SC Agro Distribuție SRL     FCT-2026-001234      15470.00      2       1
+  cf52a8c4-a5a6-4c53-911e-461b7ebf7b35     needs_review         SC Agro Distribuție SRL     FCT-2026-001234      15470.00      2       1
+  5a44a5df-498b-4527-87fa-9855a894c97b     needs_review         SC Agro Distribuție SRL     FCT-2026-001234      15470.00      2       1
+
+Status breakdown: {'completed': 2, 'needs_review': 3}
+
+Authenticated user: lucian@agrounu.ro (Lucian Murgu)
+Farm: Ferma Copou (92d7d009-47d1-4e63-ba6a-01d06edfb6b8) role=owner
+
+======================================================================
+WHAT WAS DONE:
+======================================================================
+
+1. AUDIT: Listed all 5 invoices — 3 on wrong farms, 2 stuck as 'uploaded'
+
+2. REASSIGNMENT: Moved 3 invoices to target farm 92d7d009...
+   - Dropped composite FKs, reassigned uploaded_documents + invoices + supplier
+   - Created supplier 'SC Agro Distribuție SRL' on target farm
+   - Reassigned 1 alert + 1 explanation
+   - Re-added composite FK constraints (all in one transaction)
+
+3. SCHEMA FIX: Applied missing e-Transport migration (Prompt 32)
+   - Added canonical_products.nc_code column
+   - Created transport_declarations + transport_declaration_items tables
+   - Stamped alembic to e5f6a7b8c9d0
+
+4. REPROCESSING: Ran pipeline on 2 'uploaded' invoices
+   - Both completed: uploaded → needs_review
+   - Extracted: supplier=SC Agro Distribuție SRL, inv#=FCT-2026-001234, total=15470.00
+   - Each has 2 line items
+
+5. RESULT: All 5 invoices on target farm with supplier names, totals, line items
+   - 2 completed, 3 needs_review

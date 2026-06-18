@@ -1,0 +1,4 @@
+// Shared components — implemented in Prompt 04
+// ai-label.tsx | status-pill.tsx | confidence-badge.tsx | empty-state.tsx
+// loading-table.tsx | currency.tsx | relative-time.tsx
+export {};

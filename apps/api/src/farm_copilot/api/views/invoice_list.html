@@ -1,0 +1,136 @@
+{% extends "layout.html" %}
+{% block title %}Invoices — Farm Copilot{% endblock %}
+{% block content %}
+
+<div class="flex-between mb-2">
+    <h1>📋 Invoices</h1>
+    <div style="display:flex; gap:0.5rem;">
+        {% if invoices %}
+        <form action="/export/saga/bulk" method="POST" style="display:inline;">
+            <input type="hidden" name="invoice_ids"
+                   value="{{ invoices | map(attribute='id') | join(',') }}">
+            <button type="submit" class="btn btn-outline">📥 Export {{ invoices | length }} to SAGA</button>
+        </form>
+        {% endif %}
+        <a href="/upload" class="btn btn-primary">+ Upload Invoice</a>
+    </div>
+</div>
+
+{# ── Status filter tabs ── #}
+<div style="display:flex; gap:0.5rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+    <a href="/invoices"
+       class="btn {{ 'btn-primary' if not current_status else 'btn-outline' }}"
+       style="font-size:0.8rem; padding:0.35rem 0.75rem;">
+        All ({{ total_count }})
+    </a>
+    <a href="/invoices?status=needs_review"
+       class="btn {{ 'btn-primary' if current_status == 'needs_review' else 'btn-outline' }}"
+       style="font-size:0.8rem; padding:0.35rem 0.75rem;">
+        ⚠️ Needs Review ({{ status_counts.get('needs_review', 0) }})
+    </a>
+    <a href="/invoices?status=completed"
+       class="btn {{ 'btn-primary' if current_status == 'completed' else 'btn-outline' }}"
+       style="font-size:0.8rem; padding:0.35rem 0.75rem;">
+        ✅ Completed ({{ status_counts.get('completed', 0) }})
+    </a>
+    <a href="/invoices?status=uploaded"
+       class="btn {{ 'btn-primary' if current_status == 'uploaded' else 'btn-outline' }}"
+       style="font-size:0.8rem; padding:0.35rem 0.75rem;">
+        📤 Uploaded ({{ status_counts.get('uploaded', 0) }})
+    </a>
+    <a href="/invoices?status=processing"
+       class="btn {{ 'btn-primary' if current_status == 'processing' else 'btn-outline' }}"
+       style="font-size:0.8rem; padding:0.35rem 0.75rem;">
+        ⏳ Processing ({{ status_counts.get('processing', 0) }})
+    </a>
+    <a href="/invoices?status=failed"
+       class="btn {{ 'btn-primary' if current_status == 'failed' else 'btn-outline' }}"
+       style="font-size:0.8rem; padding:0.35rem 0.75rem;">
+        ❌ Failed ({{ status_counts.get('failed', 0) }})
+    </a>
+</div>
+
+{# ── Invoice table ── #}
+{% if invoices %}
+<div class="card" style="padding:0; overflow-x:auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Supplier</th>
+                <th style="text-align:right;">Total</th>
+                <th>Status</th>
+                <th>Alerts</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in invoices %}
+            <tr>
+                <td>{{ inv.invoice_number or '—' }}</td>
+                <td>{{ inv.invoice_date.strftime('%d.%m.%Y') if inv.invoice_date else '—' }}</td>
+                <td>{{ inv.supplier_name or '—' }}</td>
+                <td style="text-align:right;">
+                    {% if inv.total_amount is not none %}
+                        {{ "%.2f"|format(inv.total_amount) }} {{ inv.currency or 'RON' }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    {% set status_map = {
+                        'completed': 'badge-success',
+                        'needs_review': 'badge-warning',
+                        'uploaded': 'badge-muted',
+                        'processing': 'badge-info',
+                        'failed': 'badge-danger'
+                    } %}
+                    <span class="badge {{ status_map.get(inv.status|string, 'badge-muted') }}">
+                        {{ inv.status|string|replace('_', ' ') }}
+                    </span>
+                </td>
+                <td>
+                    {% set ac = alert_counts.get(inv.id, 0) %}
+                    {% if ac > 0 %}
+                    <span class="badge badge-danger">{{ ac }} alert{{ 's' if ac != 1 }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/invoice/{{ inv.id }}" class="text-sm">View →</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# ── Pagination ── #}
+{% if total_pages > 1 %}
+<div style="display:flex; justify-content:center; gap:1rem; margin-top:1.5rem;">
+    {% if page > 1 %}
+    <a href="/invoices?page={{ page - 1 }}{{ '&status=' + current_status if current_status }}" class="btn btn-outline">← Previous</a>
+    {% endif %}
+    <span class="text-sm text-muted" style="align-self:center;">Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="/invoices?page={{ page + 1 }}{{ '&status=' + current_status if current_status }}" class="btn btn-outline">Next →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+{# ── Empty state ── #}
+<div class="card" style="text-align:center; padding:3rem;">
+    <p style="font-size:1.5rem; margin-bottom:0.5rem;">📭</p>
+    <h2 style="margin-bottom:0.5rem;">No invoices yet</h2>
+    <p class="text-muted mb-2">Upload your first invoice or connect ANAF for automatic sync.</p>
+    <div style="display:flex; gap:1rem; justify-content:center;">
+        <a href="/upload" class="btn btn-primary">Upload Invoice</a>
+        {% if farm_id %}
+        <a href="/anaf/status/{{ farm_id }}" class="btn btn-outline">Connect ANAF</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "layout.html" %}
+{% block title %}ANAF e-Factura — Farm Copilot{% endblock %}
+{% block content %}
+
+{# ── Flash message ─────────────────────────────────────────────── #}
+{% if flash_msg %}
+<div class="card mb-2" style="
+    background: {% if flash_type == 'success' %}rgba(74,222,128,0.1){% elif flash_type == 'error' %}rgba(248,113,113,0.1){% else %}rgba(56,189,248,0.1){% endif %};
+    border-color: {% if flash_type == 'success' %}var(--success){% elif flash_type == 'error' %}var(--danger){% else %}var(--accent){% endif %};
+    color: {% if flash_type == 'success' %}var(--success){% elif flash_type == 'error' %}var(--danger){% else %}var(--accent){% endif %};
+">
+    {{ flash_msg | replace('+', ' ') }}
+</div>
+{% endif %}
+
+<h1 class="mb-2">ANAF e-Factura</h1>
+
+{% if not connected %}
+{# ── Not connected ─────────────────────────────────────────────── #}
+<div class="card">
+    <h2>🔌 Not Connected</h2>
+    <p class="text-muted text-sm mb-2">
+        Connect your ANAF account to automatically receive invoices via SPV.
+        You will need your USB digital certificate for authorization.
+    </p>
+    <form action="/anaf/authorize/{{ farm_id }}" method="get" style="display:flex; gap:0.75rem; align-items:flex-end;">
+        <div style="flex:1;">
+            <label class="text-sm text-muted mb-1" style="display:block;" for="cif-input">Company CIF</label>
+            <input type="text" id="cif-input" name="cif" placeholder="e.g. RO12345678" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="connect-btn">
+            Connect to ANAF →
+        </button>
+    </form>
+</div>
+
+{% else %}
+{# ── Connected ─────────────────────────────────────────────────── #}
+
+{# Refresh token warning #}
+{% if refresh_warning %}
+<div class="card" style="background:rgba(251,191,36,0.1); border-color:var(--warning); color:var(--warning);">
+    ⚠️ Your ANAF connection will expire on {{ refresh_expires.strftime('%Y-%m-%d') }}.
+    Please re-authorize with your USB digital certificate before then.
+</div>
+{% endif %}
+
+{# Status card #}
+<div class="card">
+    <div class="flex-between mb-2">
+        <h2 style="margin-bottom:0;">📋 Connection Status</h2>
+        <span class="badge badge-success">Connected</span>
+    </div>
+
+    <div class="grid-2 text-sm">
+        <div>
+            <span class="text-muted">CIF:</span>
+            <strong>{{ cif }}</strong>
+        </div>
+        <div>
+            <span class="text-muted">Access Token:</span>
+            {% if access_status == 'valid' %}
+                <span class="badge badge-success">✅ Valid</span>
+            {% elif access_status == 'needs_refresh' %}
+                <span class="badge badge-warning">⚠️ Needs Refresh</span>
+            {% else %}
+                <span class="badge badge-danger">❌ Expired</span>
+            {% endif %}
+        </div>
+        <div>
+            <span class="text-muted">Refresh Token:</span>
+            Expires {{ refresh_expires.strftime('%Y-%m-%d') }}
+            ({{ refresh_days }} days)
+        </div>
+        <div>
+            <span class="text-muted">Last Sync:</span>
+            {% if last_sync %}
+                {{ last_sync.strftime('%Y-%m-%d %H:%M') }}
+            {% else %}
+                <span class="text-muted">Never</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Auto-sync info #}
+<div class="card">
+    <h3>⏱️ Auto-Sync</h3>
+    <div class="grid-2 text-sm">
+        <div>
+            <span class="text-muted">Status:</span>
+            {% if sync_enabled %}
+                <span class="badge badge-success">Enabled</span>
+            {% else %}
+                <span class="badge badge-muted">Disabled</span>
+            {% endif %}
+        </div>
+        <div>
+            <span class="text-muted">Interval:</span>
+            Every {{ sync_interval_hours }} hours
+        </div>
+    </div>
+</div>
+
+{# Action buttons #}
+<div style="display:flex; gap:0.75rem; margin-bottom:1.5rem;">
+    <form action="/anaf/sync/{{ farm_id }}" method="post" style="margin:0;">
+        <button type="submit" class="btn btn-primary" id="sync-btn">
+            🔄 Sync Now
+        </button>
+    </form>
+    <form action="/anaf/disconnect/{{ farm_id }}" method="post"
+          onsubmit="return confirm('Are you sure? This will revoke the ANAF connection.');"
+          style="margin:0;">
+        <button type="submit" class="btn btn-outline" style="border-color:var(--danger); color:var(--danger);" id="disconnect-btn">
+            Disconnect
+        </button>
+    </form>
+</div>
+
+{# Sync log table #}
+{% if sync_logs %}
+<div class="card">
+    <h2>📜 Recent Sync Log</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in sync_logs %}
+            <tr>
+                <td>{{ log.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ log.sync_type }}</td>
+                <td>
+                    {% if log.status == 'success' %}
+                        <span class="badge badge-success">Success</span>
+                    {% elif log.status == 'failed' %}
+                        <span class="badge badge-danger">Failed</span>
+                    {% elif log.status == 'skipped_duplicate' %}
+                        <span class="badge badge-muted">Duplicate</span>
+                    {% else %}
+                        <span class="badge badge-info">{{ log.status }}</span>
+                    {% endif %}
+                </td>
+                <td class="text-sm text-muted">
+                    {% if log.error_details %}
+                        {{ log.error_details[:80] }}
+                    {% elif log.invoice_id %}
+                        Invoice: {{ log.invoice_id | string | truncate(8, True, '') }}…
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard — Farm Copilot{% endblock %}
+{% block content %}
+
+<h1 class="mb-2">Welcome, {{ data.user_name }} 👋</h1>
+<p class="text-muted mb-2">{{ data.farm_name }}</p>
+
+{# ── Stats row ── #}
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="stat-number">{{ data.total_invoices }}</span>
+        <span class="stat-label">Total Invoices</span>
+    </div>
+    <div class="stat-card {{ 'stat-warning' if data.invoices_needing_review > 0 }}">
+        <span class="stat-number">{{ data.invoices_needing_review }}</span>
+        <span class="stat-label">Need Review</span>
+    </div>
+    <div class="stat-card {{ 'stat-danger' if data.unresolved_alerts > 0 }}">
+        <span class="stat-number">{{ data.unresolved_alerts }}</span>
+        <span class="stat-label">Active Alerts</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ '✅' if data.anaf_connected else '❌' }}</span>
+        <span class="stat-label">ANAF</span>
+    </div>
+</div>
+
+{# ── Action feed ── #}
+{% if data.action_items %}
+<h2 style="margin-top:1.5rem;">Needs Your Attention</h2>
+<div class="action-feed">
+    {% for item in data.action_items %}
+    <div class="action-item priority-{{ item.priority }}">
+        <span class="action-icon">{{ item.icon }}</span>
+        <div class="action-content">
+            <strong>{{ item.title }}</strong>
+            <p class="text-sm text-muted" style="margin-top:0.25rem;">{{ item.detail }}</p>
+        </div>
+        <a href="{{ item.action_url }}" class="btn btn-outline" style="white-space:nowrap; flex-shrink:0;">
+            {{ item.action_label }}
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:2rem; margin-top:1.5rem;">
+    <p style="font-size:1.5rem;">✅</p>
+    <p class="text-muted">Nothing needs your attention right now.</p>
+</div>
+{% endif %}
+
+{# ── Quick actions ── #}
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:1rem; margin-top:1.5rem;">
+    <a href="/upload" class="card" style="text-decoration:none; color:var(--text); text-align:center; transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:1.5rem;">📤</span>
+        <p class="text-sm" style="margin-top:0.25rem;">Upload Invoice</p>
+    </a>
+    <a href="/invoices" class="card" style="text-decoration:none; color:var(--text); text-align:center; transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:1.5rem;">📄</span>
+        <p class="text-sm" style="margin-top:0.25rem;">All Invoices</p>
+    </a>
+    <a href="/stock" class="card" style="text-decoration:none; color:var(--text); text-align:center; transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:1.5rem;">📦</span>
+        <p class="text-sm" style="margin-top:0.25rem;">Stock Overview</p>
+    </a>
+    <a href="/anaf/status/{{ data.farm_id }}" class="card" style="text-decoration:none; color:var(--text); text-align:center; transition:border-color 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:1.5rem;">🔗</span>
+        <p class="text-sm" style="margin-top:0.25rem;">ANAF Connection</p>
+    </a>
+</div>
+
+{% endblock %}

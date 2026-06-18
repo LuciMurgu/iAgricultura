@@ -1,0 +1,3 @@
+// Layout components — implemented in Prompt 03
+// app-shell.tsx | sidebar.tsx | mobile-nav.tsx | right-rail.tsx | page-header.tsx
+export {};

@@ -1,0 +1,258 @@
+{% extends "layout.html" %}
+{% block title %}Invoice {{ invoice.invoice_number or invoice.id }} — Farm Copilot{% endblock %}
+{% block content %}
+
+<!-- Header -->
+<div class="flex-between mb-2">
+    <h1>Invoice {{ invoice.invoice_number or "—" }}</h1>
+    {% set status = invoice.status.value if invoice.status is not string else invoice.status %}
+    {% if status == "completed" %}
+        <span class="badge badge-success">{{ status }}</span>
+    {% elif status == "needs_review" %}
+        <span class="badge badge-warning">{{ status }}</span>
+    {% elif status == "processing" %}
+        <span class="badge badge-info">{{ status }}</span>
+    {% elif status == "failed" %}
+        <span class="badge badge-danger">{{ status }}</span>
+    {% else %}
+        <span class="badge badge-muted">{{ status }}</span>
+    {% endif %}
+</div>
+
+<!-- Correction feedback banner -->
+{% if request.query_params.get('corrected') %}
+<div style="background: var(--green-50, #e8f5e9); border-left: 4px solid var(--green-600, #2e7d32); padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.9rem;">
+    {% if request.query_params.get('alias_created') %}
+        ✅ Corectare aplicată. Alias creat — descrierea se va potrivi automat data viitoare.
+    {% else %}
+        ✅ Corectare aplicată. Alias-ul exista deja.
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Invoice Header -->
+<div class="card">
+    <h2>Header</h2>
+    <div class="grid-2 text-sm">
+        <div><span class="text-muted">Invoice #:</span> {{ invoice.invoice_number or "—" }}</div>
+        <div><span class="text-muted">Date:</span> {{ invoice.invoice_date or "—" }}</div>
+        <div><span class="text-muted">Due Date:</span> {{ invoice.due_date or "—" }}</div>
+        <div><span class="text-muted">Currency:</span> {{ invoice.currency }}</div>
+        <div><span class="text-muted">Subtotal:</span> {{ invoice.subtotal_amount or "—" }}</div>
+        <div><span class="text-muted">Tax:</span> {{ invoice.tax_amount or "—" }}</div>
+        <div><span class="text-muted">Total:</span> {{ invoice.total_amount or "—" }}</div>
+        <div><span class="text-muted">Method:</span> {{ invoice.extraction_method or "—" }}</div>
+    </div>
+</div>
+
+<!-- Alerts -->
+{% if alerts %}
+<div class="card">
+    <h2>⚠️ Alerts ({{ alerts|length }})</h2>
+    {% for alert in alerts %}
+    <div style="background: rgba(251,191,36,0.06); border-radius: var(--radius); padding: 0.75rem; margin-bottom: 0.5rem;">
+        <div class="flex-between mb-1">
+            <strong>{{ alert.alert_key | replace("_", " ") | title }}</strong>
+            {% if alert.severity == "critical" %}
+                <span class="badge badge-danger">{{ alert.severity }}</span>
+            {% else %}
+                <span class="badge badge-warning">{{ alert.severity }}</span>
+            {% endif %}
+        </div>
+        <div class="text-sm text-muted">{{ alert.recommended_action }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Explanations -->
+{% if explanations %}
+<div class="card">
+    <h2>📋 Explanations ({{ explanations|length }})</h2>
+    {% for exp in explanations %}
+    <div style="border-left: 3px solid var(--accent); padding-left: 0.75rem; margin-bottom: 0.75rem;">
+        <div class="text-sm"><strong>{{ exp.explanation_kind | replace("_", " ") | title }}</strong></div>
+        <div class="text-sm">{{ exp.what_happened }}</div>
+        <div class="text-sm text-muted mt-2">{{ exp.why_it_matters }}</div>
+        <div class="text-sm" style="color: var(--accent);">→ {{ exp.next_action }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Line Items -->
+<div class="card">
+    <h2>Line Items ({{ line_items|length }})</h2>
+    {% if line_items %}
+    <div style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit</th>
+                <th>Price</th>
+                <th>Total</th>
+                <th>Class</th>
+                <th>Product</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for li in line_items %}
+            <tr>
+                <td>{{ li.line_order }}</td>
+                <td>{{ li.raw_description or "—" }}</td>
+                <td>{{ li.quantity or "—" }}</td>
+                <td>{{ li.unit or "—" }}</td>
+                <td>{{ li.unit_price or "—" }}</td>
+                <td>{{ li.line_total or "—" }}</td>
+                <td>
+                    {% set cls = li.line_classification.value if li.line_classification is not string and li.line_classification else li.line_classification %}
+                    {% if cls == "stockable_input" %}
+                        <span class="badge badge-success">stockable</span>
+                    {% elif cls %}
+                        <span class="badge badge-muted">{{ cls }}</span>
+                    {% else %}
+                        <span class="badge badge-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if li.canonical_product_id %}
+                        <span class="badge badge-info">mapped</span>
+                    {% elif li.raw_description and unresolved_suggestions.get(li.id|string) %}
+                        {% set sug = unresolved_suggestions[li.id|string] %}
+                        <div class="suggestions">
+                            <span class="text-sm text-muted">Did you mean?</span>
+                            {% for s in sug.suggestions %}
+                            <form method="POST" action="/invoice/{{ invoice.id }}/correct-line" style="margin:0;">
+                                <input type="hidden" name="line_item_id" value="{{ li.id }}">
+                                <input type="hidden" name="canonical_product_id" value="{{ s.canonical_product_id }}">
+                                <button type="submit" class="suggestion-btn{{ ' strong' if s.score >= 80 }}">
+                                    {{ s.product_name }}
+                                    <span class="score">{{ "%.0f"|format(s.score) }}%</span>
+                                    {% if s.matched_alias %}
+                                    <span class="alias-match">via "{{ s.matched_alias }}"</span>
+                                    {% endif %}
+                                </button>
+                            </form>
+                            {% endfor %}
+                            <details class="other-products">
+                                <summary class="text-sm text-muted" style="cursor:pointer; margin-top:0.25rem;">Other products…</summary>
+                                <form method="POST" action="/invoice/{{ invoice.id }}/correct-line" style="margin-top:0.25rem;">
+                                    <input type="hidden" name="line_item_id" value="{{ li.id }}">
+                                    <select name="canonical_product_id" style="width:100%; padding:0.25rem; font-size:0.85rem;">
+                                        {% for p in all_products %}
+                                        <option value="{{ p.id }}">{{ p.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-outline" style="margin-top:0.25rem; font-size:0.8rem;">Apply</button>
+                                </form>
+                            </details>
+                        </div>
+                    {% else %}
+                        <span class="badge badge-muted">unresolved</span>
+                        {% if all_products %}
+                        <details class="other-products" style="margin-top:0.25rem;">
+                            <summary class="text-sm text-muted" style="cursor:pointer;">Select product…</summary>
+                            <form method="POST" action="/invoice/{{ invoice.id }}/correct-line" style="margin-top:0.25rem;">
+                                <input type="hidden" name="line_item_id" value="{{ li.id }}">
+                                <select name="canonical_product_id" style="width:100%; padding:0.25rem; font-size:0.85rem;">
+                                    {% for p in all_products %}
+                                    <option value="{{ p.id }}">{{ p.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-outline" style="margin-top:0.25rem; font-size:0.8rem;">Apply</button>
+                            </form>
+                        </details>
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-sm">No line items extracted.</p>
+    {% endif %}
+</div>
+
+<!-- Pipeline Steps -->
+{% if steps %}
+<div class="card">
+    <h2>Pipeline Steps</h2>
+    <div class="text-sm">
+    {% set step_list = [steps.extraction, steps.classification, steps.normalization, steps.benchmark_comparison, steps.validation, steps.stock_in, steps.alert_derivation, steps.explanation_derivation] %}
+    {% for s in step_list %}
+        {% if s %}
+        <div class="flex-between" style="padding: 0.35rem 0; border-bottom: 1px solid var(--border);">
+            <span>{{ s.step | replace("_", " ") | title }}</span>
+            {% if s.outcome == "completed" %}
+                <span class="badge badge-success">{{ s.outcome }}</span>
+            {% elif s.outcome == "skipped" %}
+                <span class="badge badge-muted">{{ s.outcome }}</span>
+            {% else %}
+                <span class="badge badge-warning">{{ s.outcome }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Manual Line Correction (fallback for advanced users) -->
+<details class="card" style="cursor:default;">
+    <summary style="cursor:pointer;"><h2 style="display:inline;">Manual Line Correction</h2></summary>
+    <form method="POST" action="/invoice/{{ invoice.id }}/correct-line" style="margin-top:0.75rem;">
+        <div class="grid-2 mb-2">
+            <div>
+                <label class="text-sm text-muted mb-1" style="display:block;">Line Item ID</label>
+                <input type="text" name="line_item_id" placeholder="UUID" required>
+            </div>
+            <div>
+                <label class="text-sm text-muted mb-1" style="display:block;">Canonical Product ID</label>
+                <input type="text" name="canonical_product_id" placeholder="UUID" required>
+            </div>
+        </div>
+        <div class="mb-2">
+            <label class="text-sm text-muted mb-1" style="display:block;">Reason (optional)</label>
+            <input type="text" name="reason" placeholder="e.g. Manual match confirmed">
+        </div>
+        <button type="submit" class="btn btn-outline">Apply Correction</button>
+    </form>
+</details>
+
+<!-- Actions -->
+<div class="mt-2" style="display:flex; gap:0.5rem;">
+    <a href="/export/saga/{{ invoice.id }}" class="btn btn-outline">📥 Download for SAGA</a>
+    <form method="POST" action="/invoice/{{ invoice.id }}/reprocess" style="display:inline;">
+        <button type="submit" class="btn btn-primary">🔄 Reprocess Invoice</button>
+    </form>
+</div>
+
+<!-- Suggestion styles -->
+<style>
+.suggestions { margin: 0.25em 0; }
+.suggestion-btn {
+    display: block; width: 100%; text-align: left;
+    padding: 0.4em 0.6em; margin: 0.2em 0; cursor: pointer;
+    border: 1px solid var(--border, #ddd); border-radius: 4px;
+    background: var(--bg-secondary, #f9f9f9);
+    font-size: 0.85rem; line-height: 1.3;
+}
+.suggestion-btn.strong {
+    border-color: var(--green-600, #2e7d32);
+    background: var(--green-50, #e8f5e9);
+}
+.suggestion-btn:hover {
+    background: var(--bg-hover, #eee);
+    border-color: var(--accent, #1976d2);
+}
+.score { opacity: 0.6; font-size: 0.85em; margin-left: 0.5em; }
+.alias-match { opacity: 0.5; font-size: 0.8em; font-style: italic; display: block; }
+</style>
+
+{% endblock %}
+

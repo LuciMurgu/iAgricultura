@@ -1,0 +1,55 @@
+# Build output
+dist/
+build/
+.next/
+*.tsbuildinfo
+out/
+
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.egg-info/
+
+# Caches
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.turbo/
+.swc/
+.parcel-cache/
+
+# Test artifacts
+coverage/
+test-results/
+playwright-report/
+htmlcov/
+.nyc_output/
+
+# Environment files (only *.example are tracked)
+.env
+.env.*
+!.env.example
+!*.env.example
+!.env.production.example
+
+# Runtime data
+uploads/
+anaf_downloads/
+*.log
+*.pid
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# Misc
+.npm/
+.pnpm-store/

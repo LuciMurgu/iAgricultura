@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+{% block title %}{{ product.name if product else 'Product' }} — Stock — Farm Copilot{% endblock %}
+{% block content %}
+
+{% if error %}
+<div class="card" style="text-align:center; padding:2rem;">
+    <p class="text-muted">{{ error }}</p>
+    <a href="/stock" class="btn btn-outline mt-2">← Back to Stock Overview</a>
+</div>
+{% elif product %}
+
+<div class="mb-2">
+    <a href="/stock" class="text-sm text-muted" style="text-decoration:none;">← Back to Stock Overview</a>
+</div>
+
+<h1>{{ product.name }}</h1>
+<p class="text-muted mb-2">{{ product.category or "Uncategorized" }} · Movement History</p>
+
+{% if movements %}
+<div class="card" style="padding:0; overflow-x:auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Direction</th>
+                <th style="text-align:right;">Quantity</th>
+                <th>Unit</th>
+                <th>Invoice</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in movements %}
+            <tr>
+                <td>{{ m.effective_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                <td>
+                    {% if m.direction|string == 'in' %}
+                    <span class="badge badge-success">📥 In</span>
+                    {% elif m.direction|string == 'out' %}
+                    <span class="badge badge-danger">📤 Out</span>
+                    {% else %}
+                    <span class="badge badge-warning">🔄 Adjustment</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;">{{ "%.4f"|format(m.quantity) }}</td>
+                <td><span class="badge badge-muted">{{ m.unit }}</span></td>
+                <td>
+                    {% if m.invoice_id %}
+                    <a href="/invoice/{{ m.invoice_id }}" class="text-sm">View invoice →</a>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                <td class="text-sm text-muted">{{ m.notes or '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:2rem;">
+    <p class="text-muted">No movements recorded for this product.</p>
+</div>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

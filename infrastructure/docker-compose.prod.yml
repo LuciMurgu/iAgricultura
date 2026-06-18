@@ -1,0 +1,46 @@
+# Production Docker Compose for the FastAPI backend.
+# Database is external (Supabase). Frontend is external (Vercel).
+# nginx runs on the host (not in compose) and proxies to port 8000.
+#
+# Run from the repo root:
+#   docker compose -f infrastructure/docker-compose.prod.yml --env-file .env.production up -d --build
+
+services:
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    image: farm-copilot-api:latest
+    container_name: farm-copilot-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"   # bound to localhost; nginx proxies inbound
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
+      FRONTEND_URL: ${FRONTEND_URL}
+      ENV: ${ENV:-production}
+
+      ANAF_ENCRYPTION_KEY: ${ANAF_ENCRYPTION_KEY}
+      ANAF_CLIENT_ID: ${ANAF_CLIENT_ID:-}
+      ANAF_CLIENT_SECRET: ${ANAF_CLIENT_SECRET:-}
+      ANAF_REDIRECT_URI: ${ANAF_REDIRECT_URI:-https://api.iagricultura.ro/anaf/callback}
+      ANAF_TEST_MODE: ${ANAF_TEST_MODE:-false}
+      ANAF_SYNC_ENABLED: ${ANAF_SYNC_ENABLED:-true}
+      ANAF_SYNC_INTERVAL_SECONDS: ${ANAF_SYNC_INTERVAL_SECONDS:-14400}
+
+      TRANSFORMERS_CACHE: /app/.cache/transformers
+    volumes:
+      - api_uploads:/app/uploads
+      - api_anaf:/app/anaf_downloads
+      - api_cache:/app/.cache
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; r=httpx.get('http://localhost:8000/health'); r.raise_for_status()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  api_uploads:
+  api_anaf:
+  api_cache:

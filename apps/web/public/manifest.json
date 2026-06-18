@@ -1,0 +1,27 @@
+{
+  "name": "AgroUnu",
+  "short_name": "AgroUnu",
+  "description": "Asistent de achiziții și inteligență de marjă pentru ferme de cultură din România",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0F766E",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "ro",
+  "dir": "ltr"
+}

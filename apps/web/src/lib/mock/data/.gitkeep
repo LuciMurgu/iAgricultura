@@ -1,0 +1,5 @@
+// Mock data files — implemented in Prompt 04
+// invoices.ts | stock.ts | alerts.ts | action-feed.ts | parcels.ts
+// sensors.ts | cooperative.ts | bidding.ts | arenda.ts
+// e-transport.ts | carbon.ts | apia-vault.ts
+export {};

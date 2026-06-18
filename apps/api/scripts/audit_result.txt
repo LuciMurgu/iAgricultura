@@ -1,0 +1,33 @@
+=== FARMS ===
+  00000000-0000-0000-0000-000000000001  name=Test Farm  cif=None
+  15361f86-ced6-4d8b-ba9d-d2a69333140b  name=Ferma E2E Test  cif=None
+  92d7d009-47d1-4e63-ba6a-01d06edfb6b8  name=Ferma Copou  cif=None
+
+=== INVOICES ===
+  c8227b2f-6557-495d-b175-a59726adbbb0  farm=00000000-0000-0000-0000-000000000001  status=completed        sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00  doc=807d9a52-2400-42b6-bbac-92f9d5a2740a  sup_id=6f480e2b-719b-4413-be91-0ec8de304afa
+  6aec80ba-5aa8-43b2-83ea-ee51a7c01808  farm=15361f86-ced6-4d8b-ba9d-d2a69333140b  status=completed        sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00  doc=a301a009-8a7a-45b4-99c9-7ae77ec9ef00  sup_id=e7794b72-665c-4282-9c9d-b63a71d9713d
+  e16fafbf-d59e-425c-aa25-df9ceda93120  farm=15361f86-ced6-4d8b-ba9d-d2a69333140b  status=needs_review     sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00  doc=998a9b57-8093-47b1-96f1-90883ff2904d  sup_id=e7794b72-665c-4282-9c9d-b63a71d9713d
+  cf52a8c4-a5a6-4c53-911e-461b7ebf7b35  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=uploaded         sup=None                            inv#=None  total=None  doc=909f0c55-2adb-4948-bebc-3b5774825bc6  sup_id=None
+  5a44a5df-498b-4527-87fa-9855a894c97b  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=uploaded         sup=None                            inv#=None  total=None  doc=3f9b746d-5361-4872-9cbe-8911b576508a  sup_id=None
+
+=== SUPPLIERS ===
+  6f480e2b-719b-4413-be91-0ec8de304afa  farm=00000000-0000-0000-0000-000000000001  name=SC Agro Distribuție SRL  tax=RO12345678
+  e7794b72-665c-4282-9c9d-b63a71d9713d  farm=15361f86-ced6-4d8b-ba9d-d2a69333140b  name=SC Agro Distribuție SRL  tax=RO12345678
+
+=== UPLOADED DOCS ===
+  807d9a52-2400-42b6-bbac-92f9d5a2740a  farm=00000000-0000-0000-0000-000000000001  type=xml  file=efactura_sample.xml
+  a301a009-8a7a-45b4-99c9-7ae77ec9ef00  farm=15361f86-ced6-4d8b-ba9d-d2a69333140b  type=xml  file=efactura_sample.xml
+  998a9b57-8093-47b1-96f1-90883ff2904d  farm=15361f86-ced6-4d8b-ba9d-d2a69333140b  type=xml  file=efactura_sample.xml
+  909f0c55-2adb-4948-bebc-3b5774825bc6  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  type=xml  file=efactura_sample.xml
+  3f9b746d-5361-4872-9cbe-8911b576508a  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  type=xml  file=efactura_sample.xml
+
+=== LINE ITEMS PER INVOICE ===
+  inv=6aec80ba-5aa8-43b2-83ea-ee51a7c01808  lines=2
+  inv=c8227b2f-6557-495d-b175-a59726adbbb0  lines=2
+  inv=e16fafbf-d59e-425c-aa25-df9ceda93120  lines=2
+
+=== ALERTS PER INVOICE ===
+  inv=e16fafbf-d59e-425c-aa25-df9ceda93120  alerts=1
+
+=== STOCK MOVEMENTS ===
+  total: 0

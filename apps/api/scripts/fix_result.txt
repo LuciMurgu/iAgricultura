@@ -1,0 +1,36 @@
+=== Dropping composite FK constraints ===
+  Done
+
+=== REASSIGNMENT: 3 invoices to move ===
+  Reusing supplier 'SC Agro Distribuție SRL': aeda72d5-1e31-4291-8588-2bfda119e15f
+  Reusing supplier 'SC Agro Distribuție SRL': aeda72d5-1e31-4291-8588-2bfda119e15f
+
+=== Moving data ===
+  inv=c8227b2f-6557-495d-b175-a59726adbbb0 doc=807d9a52-2400-42b6-bbac-92f9d5a2740a status=completed -> target farm
+  inv=6aec80ba-5aa8-43b2-83ea-ee51a7c01808 doc=a301a009-8a7a-45b4-99c9-7ae77ec9ef00 status=completed -> target farm
+  inv=e16fafbf-d59e-425c-aa25-df9ceda93120 doc=998a9b57-8093-47b1-96f1-90883ff2904d status=needs_review -> target farm
+
+=== Related records ===
+  invoice_alerts: UPDATE 1
+  invoice_explanations: UPDATE 1
+  benchmark_observations: UPDATE 0
+  stock_movements: UPDATE 0
+  line_corrections: UPDATE 0
+
+=== Re-adding composite FK constraints ===
+  Done
+
+=== TRANSACTION COMMITTED ===
+
+=== VERIFICATION ===
+  ✓ c8227b2f-6557-495d-b175-a59726adbbb0  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=completed        sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00
+  ✓ 6aec80ba-5aa8-43b2-83ea-ee51a7c01808  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=completed        sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00
+  ✓ e16fafbf-d59e-425c-aa25-df9ceda93120  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=needs_review     sup=SC Agro Distribuție SRL         inv#=FCT-2026-001234  total=15470.00
+  ✓ cf52a8c4-a5a6-4c53-911e-461b7ebf7b35  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=uploaded         sup=None                            inv#=None  total=None
+  ✓ 5a44a5df-498b-4527-87fa-9855a894c97b  farm=92d7d009-47d1-4e63-ba6a-01d06edfb6b8  status=uploaded         sup=None                            inv#=None  total=None
+
+  All on target farm: YES ✓
+
+=== UPLOADED INVOICES NEEDING REPROCESSING: 2 ===
+  cf52a8c4-a5a6-4c53-911e-461b7ebf7b35
+  5a44a5df-498b-4527-87fa-9855a894c97b

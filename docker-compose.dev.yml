@@ -1,0 +1,57 @@
+# Local development stack.
+# For production see infrastructure/docker-compose.prod.yml.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: farm_copilot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/farm_copilot
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:-dev-only-not-secret}
+      FRONTEND_URL: http://localhost:3000
+      ENV: development
+      ANAF_TEST_MODE: "true"
+      ANAF_SYNC_ENABLED: "false"
+    ports:
+      - "8000:8000"
+    volumes:
+      - api_uploads:/app/uploads
+      - api_anaf:/app/anaf_downloads
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_STRICT_API: "false"
+
+volumes:
+  pgdata:
+  api_uploads:
+  api_anaf:
