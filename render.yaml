@@ -14,7 +14,10 @@ services:
     # Paths are relative to the repo root.
     dockerfilePath: apps/api/Dockerfile
     dockerContext: apps/api
-    plan: starter # 512 MB; the image bundles torch, so avoid the free tier.
+    # Free tier (512 MB) is sufficient: sentence-transformers/torch is lazy-imported
+    # inside worker functions, not on the API startup path, so it isn't loaded into
+    # memory at boot. Free instances spin down after ~15 min idle (cold start ~50s).
+    plan: free
     region: frankfurt # Closest Render region to Romania.
     healthCheckPath: /health
     autoDeploy: true
