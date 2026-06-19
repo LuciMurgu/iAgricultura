@@ -47,12 +47,16 @@ services:
       - key: ANAF_ENCRYPTION_KEY
         sync: false
       # Demo account seeded on first boot so the login walkthrough works.
+      # NOTE: the login form validates the username as an email, so the demo
+      # identifier must be email-shaped (user@iagricultura.ro), not a bare name.
       - key: DEMO_SEED_ENABLED
         value: "true"
       - key: DEMO_USER_EMAIL
-        value: demo@iagricultura.ro
+        value: user@iagricultura.ro
+      # Demo-only throwaway password for the public showcase login (not a real
+      # secret). Kept in the blueprint so it deploys deterministically.
       - key: DEMO_USER_PASSWORD
-        sync: false # Defaults to "demo1234" in code if left unset.
+        value: userpass
       - key: DEMO_USER_NAME
         value: Cont Demo
       - key: DEMO_FARM_NAME

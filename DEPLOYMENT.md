@@ -6,26 +6,35 @@ Single source of truth. Replaces the contradictory copies that lived in
 ## Topology
 
 ```
-                 iagricultura.ro             api.iagricultura.ro
-                        |                            |
-                  Cloudflare (DNS + SSL + WAF + proxied)
-                        |                            |
-                        v                            v
-                Vercel (Next.js)            Render (Docker)
-                apps/web                    apps/api (FastAPI)
-                        \                            /
-                         \                          /
-                          v                        v
-                              Supabase Postgres
-                          (transaction pooler URL)
+        www.iagricultura.ro          iagricultura.ro          api.iagricultura.ro
+        (canonical site)             (apex -> 301 www)        (API)
+                |                            |                        |
+                | CNAME (DNS only)           | CNAME (DNS only)       | CNAME (DNS only)
+                |                            |                        |
+                v                            v                        v
+        Render Web (Next.js)         Render Web (Next.js)      Render API (FastAPI, Docker)
+        farm-copilot-web             farm-copilot-web          farm-copilot-api
+                          \                  |                        /
+                           \                 |                       /
+                            v                v                      v
+                                     Supabase Postgres
+                                 (transaction pooler URL)
 ```
 
-Four providers, each doing one job:
+Three providers, each doing one job:
 
-- **Vercel** hosts the Next.js SPA.
-- **Render** runs the FastAPI container (Docker) — no server to manage.
+- **Render** runs both the Next.js web app (`farm-copilot-web`) and the FastAPI
+  container (`farm-copilot-api`, Docker) — no server to manage. All three
+  hostnames (`www`, apex, `api`) are attached directly as Render custom domains,
+  and Render issues/renews their Let's Encrypt certificates.
 - **Supabase** provides managed Postgres.
-- **Cloudflare** terminates TLS, proxies traffic, and provides DNS and WAF.
+- **Cloudflare** provides DNS only. All records are **DNS-only (grey cloud)** so
+  traffic goes straight to Render, which terminates TLS and routes by Host.
+
+> Why no Vercel: the web app runs on Render too, so a fourth provider is not
+> needed. All three hostnames fit within the Render workspace's custom-domain
+> allowance (the apex + `www` pair counts as one), so no Cloudflare proxy or
+> Origin Rule is required — Cloudflare is purely the DNS host.
 
 This guide covers the **demo deploy**: ANAF auto-sync is disabled
 (`ANAF_SYNC_ENABLED=false`), so the API is a stateless service that fits a
@@ -51,28 +60,48 @@ scheduler, run the API on a VPS instead (see "Alternative: VPS" at the end).
 
 ### 2. Cloudflare
 
-1. Add `iagricultura.ro` as a zone (you already have it).
-2. DNS records:
-   - `iagricultura.ro` — CNAME to your Vercel project domain. Proxied (orange cloud ON).
-   - `www.iagricultura.ro` — CNAME to `iagricultura.ro`. Proxied.
-   - `api.iagricultura.ro` — CNAME to your Render service host (`<service>.onrender.com`). Proxied.
-3. SSL/TLS:
-   - Mode: **Full** (origin terminates HTTPS; Cloudflare encrypts browser to edge).
-   - Always Use HTTPS: ON.
-   - Min TLS: 1.2.
+1. Add `iagricultura.ro` as a zone — done (Free plan). Cloudflare assigned the
+   nameservers:
+   - `nick.ns.cloudflare.com`
+   - `rosalyn.ns.cloudflare.com`
 
-> Tip: while Render verifies the `api.iagricultura.ro` custom domain, temporarily
-> set that record to **DNS only** (grey cloud). Once Render shows the domain as
-> verified with a valid certificate, switch it back to **Proxied** (orange cloud).
+2. **Registrar nameserver delegation (DONE).**
+   `iagricultura.ro` is registered at ROTLD through the **ICI registrar** (it is
+   *not* a Cloudflare-Registrar domain). The registry's nameservers were updated
+   (via ROTLD DomAdmin, with the change confirmed by email) to the two Cloudflare
+   nameservers above. The `.ro` registry now delegates to
+   `nick.ns.cloudflare.com` / `rosalyn.ns.cloudflare.com` and the Cloudflare zone
+   is **Active**.
+   - If you ever re-delegate: log in where you manage the `.ro` domain (ROTLD /
+     ICI or your reseller), set the nameservers, confirm the emailed change
+     request, then wait for propagation (typically 1–24 h).
 
-### 3. Vercel (frontend)
+3. DNS records (already created in the zone) — **all DNS-only (grey cloud)** so
+   Render can verify the custom domains and issue/serve their certificates:
+   - `iagricultura.ro` (apex) — CNAME to `farm-copilot-web.onrender.com`.
+   - `www.iagricultura.ro` — CNAME to `farm-copilot-web.onrender.com`.
+   - `api.iagricultura.ro` — CNAME to `farm-copilot-api.onrender.com`.
 
-1. Import the GitHub repo. Set **Root Directory** to `apps/web`.
-2. Framework: Next.js (auto-detected).
-3. Environment variables (Production):
+4. SSL/TLS: mode is **Full**, but it is effectively moot because every record is
+   DNS-only — Cloudflare is not in the request path and TLS is terminated by
+   Render. No Cloudflare proxy, Origin Rule, or Redirect Rule is needed; the
+   apex→`www` 301 is handled natively by Render (see step 3 below).
+
+### 3. Render (frontend — `farm-copilot-web`)
+
+The web app is deployed from [`apps/web/Dockerfile`](apps/web/Dockerfile)
+(Next.js `output: "standalone"`, `pnpm` pinned to `9.15.4` for Node 20).
+
+1. The `farm-copilot-web` web service is created from the
+   [`render.yaml`](render.yaml) blueprint along with the API.
+2. Environment variables (Production):
    - `NEXT_PUBLIC_API_URL=https://api.iagricultura.ro` (required — the build fails without it).
-4. Add `iagricultura.ro` as a custom domain. Vercel will give a CNAME target; that
-   matches the Cloudflare DNS record from step 2.
+3. **Settings → Custom Domains**: add **`www.iagricultura.ro`** (canonical).
+   Render automatically pairs it with the apex `iagricultura.ro` and 301-redirects
+   apex → `www`. Both map to the Cloudflare DNS-only CNAMEs from step 2. Render
+   issues and renews the certificates once DNS resolves (i.e. after the registrar
+   delegation in step 2.2 completes).
+   `FRONTEND_URL` is set to `https://www.iagricultura.ro` so API CORS matches.
 
 ### 4. Render (backend)
 
@@ -94,8 +123,11 @@ stamps/upgrades Alembic), seeds the product catalog, and seeds the demo account.
    - `DEMO_USER_PASSWORD` — optional; defaults to `demo1234` if unset.
    - `ANAF_ENCRYPTION_KEY` — only needed if you later enable ANAF.
    - `SESSION_SECRET_KEY` is auto-generated by Render (`generateValue: true`).
-3. **Settings > Custom Domains**: add `api.iagricultura.ro`. Render shows the
-   CNAME target — use it in the Cloudflare record from step 2 (Cloudflare).
+3. **Settings > Custom Domains**: add `api.iagricultura.ro` (a Render custom
+   domain on the API service — no Cloudflare proxy involved). Render shows the
+   CNAME target (`farm-copilot-api.onrender.com`) — it matches the DNS-only
+   Cloudflare record from step 2. Render verifies it and issues the certificate
+   once DNS resolves.
 
 ---
 
@@ -115,11 +147,14 @@ INFO  ANAF auto-sync is disabled (ANAF_SYNC_ENABLED=false)
 INFO  Uvicorn running on http://0.0.0.0:10000
 ```
 
-The demo login is then `demo@iagricultura.ro` / `demo1234` (override via
+The demo login is then `user@iagricultura.ro` / `userpass` (override via
 `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD`, or disable with
-`DEMO_SEED_ENABLED=false` for a real-data launch).
+`DEMO_SEED_ENABLED=false` for a real-data launch). Note: the login form
+validates the username as an email, so the demo identifier must be email-shaped
+(e.g. `user@iagricultura.ro`), not a bare username.
 
-For Vercel, push to your `main` branch and Vercel auto-deploys.
+The `farm-copilot-web` service builds and deploys from the same `main` push
+(`autoDeploy: true`).
 
 ---
 
@@ -129,21 +164,25 @@ For Vercel, push to your `main` branch and Vercel auto-deploys.
 # Render-internal URL (before the custom domain resolves)
 curl https://farm-copilot-api.onrender.com/health
 
-# Through Cloudflare, once DNS is set
-curl https://api.iagricultura.ro/health
-curl https://iagricultura.ro
+# Custom domains (all live: zone Active, certs issued)
+curl https://api.iagricultura.ro/health          # {"status":"healthy","database":"connected"}
+curl -I https://iagricultura.ro                  # 301 -> https://www.iagricultura.ro/
+curl https://www.iagricultura.ro                 # 200, <title>Farm Copilot</title>
 ```
 
-Open `https://iagricultura.ro`. You should be redirected to `/login`. Sign in
-with the seeded demo account (`demo@iagricultura.ro` / `demo1234`) and confirm
+> Note: the API runs on Render's free tier and spins down when idle. The first
+> request after a cold start can take 1–2 minutes; subsequent requests are fast.
+
+Open `https://www.iagricultura.ro`. You should be redirected to `/login`. Sign in
+with the seeded demo account (`user@iagricultura.ro` / `userpass`) and confirm
 the dashboard loads with visible "Date demo" indicators on the mock surfaces.
 
 ---
 
 ## Updating
 
-Push to `main`. Render rebuilds the API and Vercel redeploys the web app
-automatically (`autoDeploy: true`). Startup re-runs any pending migrations.
+Push to `main`. Render rebuilds both the API and the web app automatically
+(`autoDeploy: true`). API startup re-runs any pending migrations.
 
 ---
 
@@ -173,12 +212,12 @@ Confirm the service is "Live" in Render and that it bound to `$PORT` — the log
 should end with `Uvicorn running on http://0.0.0.0:10000`. The health check
 path is `/health`.
 
-**Cookie not set after login from Vercel.**
+**Cookie not set after login.**
 The session cookie is hardened from config in
 [`apps/api/src/farm_copilot/api/app.py`](apps/api/src/farm_copilot/api/app.py):
 in production it is `Secure`, `same_site="lax"`, and scoped to
 `SESSION_COOKIE_DOMAIN`. Set `SESSION_COOKIE_DOMAIN=.iagricultura.ro` so the
-SPA on `iagricultura.ro` sends the cookie to `api.iagricultura.ro`.
+SPA on `www.iagricultura.ro` sends the cookie to `api.iagricultura.ro`.
 
 **Frontend shows demo data.**
 This is expected for the showcase build: surfaces still backed by mock fixtures
