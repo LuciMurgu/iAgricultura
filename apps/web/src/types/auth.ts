@@ -14,6 +14,15 @@ export const LoginRequestSchema = z.object({
 
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 
+export const RegisterRequestSchema = z.object({
+  name: z.string().min(2, "Numele este obligatoriu"),
+  email: z.string().email("Adresă de email invalidă"),
+  password: z.string().min(8, "Parola trebuie să aibă cel puțin 8 caractere"),
+  farm_name: z.string().min(2, "Numele fermei este obligatoriu"),
+});
+
+export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
+
 // ── Response schemas ────────────────────────────────────────────────────────
 
 /**
@@ -45,6 +54,14 @@ export const LoginResponseSchema = z.object({
 });
 
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+
+/** Register response — account created, pending admin approval. */
+export const RegisterResponseSchema = z.object({
+  ok: z.boolean(),
+  message: z.string(),
+});
+
+export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
 
 // ── Error schema ─────────────────────────────────────────────────────────────
 

@@ -61,6 +61,22 @@ services:
         value: Cont Demo
       - key: DEMO_FARM_NAME
         value: Ferma Demo
+      # ── Email (Resend) + self-service signup approval ──────────────────
+      # Resend API key — secret, set in the dashboard. Empty disables email
+      # (signup still works; the approval link is only logged).
+      - key: RESEND_API_KEY
+        sync: false
+      # Verified sender. Switch to a verified iagricultura.ro address once the
+      # domain's DKIM/SPF records are added in Cloudflare and verified in Resend.
+      - key: EMAIL_FROM
+        value: Farm Copilot <noreply@iagricultura.ro>
+      # Inbox that receives the one-click "approve account" links — set in the
+      # dashboard (sync:false so it isn't committed to the repo).
+      - key: ADMIN_EMAIL
+        sync: false
+      # Public base URL of this API, used to build approval links.
+      - key: API_PUBLIC_URL
+        value: https://api.iagricultura.ro
 
   - type: web
     name: farm-copilot-web

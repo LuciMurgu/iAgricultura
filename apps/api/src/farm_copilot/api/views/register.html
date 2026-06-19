@@ -9,6 +9,14 @@
     <div class="error-msg">{{ error }}</div>
     {% endif %}
 
+    {% if pending %}
+    <div class="card">
+        <p>{{ pending }}</p>
+        <p class="text-sm text-muted" style="margin-top:1rem;">
+            <a href="/login">← Înapoi la autentificare</a>
+        </p>
+    </div>
+    {% else %}
     <div class="card">
         <form method="post" action="/register">
             <div class="mb-2">
@@ -36,6 +44,7 @@
     <p class="text-sm text-muted" style="text-align:center; margin-top:1rem;">
         Already have an account? <a href="/login">Login →</a>
     </p>
+    {% endif %}
 </div>
 
 {% endblock %}

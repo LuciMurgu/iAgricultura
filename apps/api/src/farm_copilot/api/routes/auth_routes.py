@@ -14,7 +14,16 @@ from farm_copilot.api.auth import (
     verify_password,
 )
 from farm_copilot.api.dashboard import build_dashboard_data
-from farm_copilot.api.deps import get_current_farm_id, get_current_user_id, get_db
+from farm_copilot.api.deps import (
+    app_settings,
+    get_current_farm_id,
+    get_current_user_id,
+    get_db,
+)
+from farm_copilot.api.email_service import (
+    make_approval_token,
+    send_admin_approval_email,
+)
 from farm_copilot.api.templates import templates
 
 router = APIRouter(tags=["auth"])
@@ -128,23 +137,40 @@ async def register(
             status_code=400,
         )
 
-    # Create user + farm
+    # Create a PENDING (inactive) user + farm. The account cannot log in until
+    # an admin approves it — no session is set here.
     user = await create_user(
-        session, email=email, password=password, name=name
+        session, email=email, password=password, name=name, is_active=False
     )
-    farm = await create_farm_with_owner(
+    await create_farm_with_owner(
         session, user_id=user.id, farm_name=farm_name
     )
     await session.commit()
 
-    # Set session
-    request.session["user_id"] = str(user.id)
-    request.session["farm_id"] = str(farm.id)
-    request.session["farm_name"] = farm.name
-    request.session["farm_cif"] = farm.cif or ""
-    request.session["user_name"] = user.name
+    # Email the admin a one-click approval link.
+    base = (app_settings.api_public_url or str(request.base_url)).rstrip("/")
+    token = make_approval_token(user.id)
+    approve_url = f"{base}/api/v1/auth/approve?token={token}"
+    if app_settings.admin_email:
+        await send_admin_approval_email(
+            admin_email=app_settings.admin_email,
+            user_email=user.email,
+            user_name=user.name,
+            farm_name=farm_name.strip(),
+            approve_url=approve_url,
+        )
 
-    return RedirectResponse(url="/dashboard", status_code=303)
+    # Show a "pending approval" confirmation instead of logging in.
+    return templates.TemplateResponse(
+        request=request,
+        name="register.html",
+        context={
+            "pending": (
+                "Cont creat. Vei primi un email de confirmare după ce este "
+                "aprobat de administrator."
+            )
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

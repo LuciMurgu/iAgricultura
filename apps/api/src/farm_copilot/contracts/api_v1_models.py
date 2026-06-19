@@ -35,6 +35,22 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RegisterRequest(BaseModel):
+    """POST /api/v1/auth/register body."""
+
+    email: str
+    password: str
+    name: str
+    farm_name: str
+
+
+class RegisterResponse(BaseModel):
+    """POST /api/v1/auth/register response — account pending approval."""
+
+    ok: bool = True
+    message: str
+
+
 class UserResponse(BaseModel):
     """User object returned by auth endpoints."""
 

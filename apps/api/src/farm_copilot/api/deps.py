@@ -30,6 +30,16 @@ class AppSettings(BaseSettings):
     # Cookie scope so the session survives web<->api subdomain calls,
     # e.g. ".iagricultura.ro". Empty means host-only (fine for localhost).
     session_cookie_domain: str = ""
+    # ── Email (Resend) + signup approval ──────────────────────────────────
+    # Resend API key. Empty disables email (signup still works, just no mail).
+    resend_api_key: str = ""
+    # Verified sender. Defaults to Resend's sandbox sender for pre-verification.
+    email_from: str = "Farm Copilot <onboarding@resend.dev>"
+    # Inbox that receives the one-click "approve account" links.
+    admin_email: str = ""
+    # Public base URL of this API, e.g. "https://api.iagricultura.ro", used to
+    # build approval links. Falls back to the request base URL when empty.
+    api_public_url: str = ""
 
     model_config = {
         "env_file": ".env",

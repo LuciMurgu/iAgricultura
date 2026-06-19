@@ -179,6 +179,52 @@ the dashboard loads with visible "Date demo" indicators on the mock surfaces.
 
 ---
 
+## Self-service signup + email approval
+
+Visitors can create their own account at `https://www.iagricultura.ro/register`.
+New accounts are created **pending** (`is_active=false`) and cannot log in until
+an admin approves them:
+
+1. User submits the signup form → `POST /api/v1/auth/register` creates an
+   inactive user + their farm and emails **you** a one-click approval link.
+2. You click **Aprobă contul** in that email → `GET /api/v1/auth/approve?token=…`
+   activates the account and emails the user a "cont activat" confirmation.
+3. The user can now log in. (Login already rejects inactive accounts with
+   "Contul tău așteaptă aprobarea administratorului.")
+
+Approval links are signed with `SESSION_SECRET_KEY` (`itsdangerous`) and expire
+after 7 days — no extra database columns are needed.
+
+### Email config (Render env vars on `farm-copilot-api`)
+
+| Var | Set in | Notes |
+| --- | --- | --- |
+| `RESEND_API_KEY` | dashboard (`sync:false`) | From resend.com → API Keys. Empty ⇒ email is skipped and the approval link is only written to the logs. |
+| `EMAIL_FROM` | `render.yaml` | `Farm Copilot <noreply@iagricultura.ro>`. Must be on a Resend-verified domain. |
+| `ADMIN_EMAIL` | dashboard (`sync:false`) | Inbox that receives the approval links. |
+| `API_PUBLIC_URL` | `render.yaml` | `https://api.iagricultura.ro` — used to build the approval link. |
+
+### Verify the sending domain in Resend (one-time, required for real email)
+
+Until `iagricultura.ro` is verified, Resend only delivers to the Resend account
+owner's address. To send to your admin inbox and to real users:
+
+1. Resend → **Domains → Add Domain** → `iagricultura.ro`.
+2. Resend shows DKIM / SPF / return-path records. Add each one in the
+   **Cloudflare** zone (DNS-only) exactly as shown:
+   - DKIM: a `TXT`/`CNAME` record like `resend._domainkey` → value from Resend.
+   - SPF: a `TXT` on the send subdomain (e.g. `send`) `v=spf1 include:amazonses.com ~all`.
+   - Return-path: a `MX` + `TXT` on the `send` subdomain.
+3. Back in Resend, click **Verify**. Once green, set `RESEND_API_KEY` and
+   `ADMIN_EMAIL` in the Render dashboard (and flip `EMAIL_FROM` to a verified
+   address if you used the sandbox sender).
+
+> Tested locally end-to-end (register → pending login blocked → approve →
+> activated → login) against Postgres with the Resend call mocked. The only
+> remaining live step is the Resend domain verification above.
+
+---
+
 ## Updating
 
 Push to `main`. Render rebuilds both the API and the web app automatically

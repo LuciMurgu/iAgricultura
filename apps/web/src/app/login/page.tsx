@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -204,8 +205,19 @@ export default function LoginPage() {
           </form>
         </div>
 
+        {/* Sign-up link */}
+        <p className="mt-6 text-center text-sm text-slate-500">
+          Nu ai cont?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-brand-700 hover:text-brand-800"
+          >
+            Creează cont
+          </Link>
+        </p>
+
         {/* Footer note */}
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-slate-400">
           Farm Copilot · Sistem de achiziții pentru ferme din România
         </p>
       </div>

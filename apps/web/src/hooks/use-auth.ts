@@ -51,7 +51,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
       if (err instanceof NetworkError) {
         message = "Conexiune indisponibilă. Verificați rețeaua.";
       } else if (err instanceof ApiError) {
-        if (err.status === 401 || err.status === 403) {
+        if (err.status === 403 && err.detail) {
+          // Account exists but is not yet approved — surface the reason.
+          message = err.detail;
+        } else if (err.status === 401) {
           message = "Email sau parolă incorecte.";
         } else if (err.detail) {
           message = err.detail;

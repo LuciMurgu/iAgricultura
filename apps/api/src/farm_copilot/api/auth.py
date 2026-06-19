@@ -57,12 +57,18 @@ async def create_user(
     email: str,
     password: str,
     name: str,
+    is_active: bool = True,
 ) -> User:
-    """Create a new user with hashed password."""
+    """Create a new user with hashed password.
+
+    Pass ``is_active=False`` to create a pending account that cannot log in
+    until an admin approves it.
+    """
     user = User(
         email=email.lower().strip(),
         password_hash=hash_password(password),
         name=name.strip(),
+        is_active=is_active,
     )
     session.add(user)
     await session.flush()

@@ -9,9 +9,13 @@ import { apiClient } from "@/lib/api/client";
 import {
   LoginRequestSchema,
   LoginResponseSchema,
+  RegisterRequestSchema,
+  RegisterResponseSchema,
   UserSchema,
   type LoginRequest,
   type LoginResponse,
+  type RegisterRequest,
+  type RegisterResponse,
   type User,
 } from "@/types/auth";
 
@@ -26,6 +30,18 @@ export const authService = {
 
     const response = await apiClient.post<unknown>("/api/v1/auth/login", credentials);
     return LoginResponseSchema.parse(response.data);
+  },
+
+  /**
+   * POST /api/v1/auth/register
+   * Creates a pending account (no session). An admin must approve it before
+   * the user can log in. Returns the confirmation message to display.
+   */
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
+    RegisterRequestSchema.parse(data);
+
+    const response = await apiClient.post<unknown>("/api/v1/auth/register", data);
+    return RegisterResponseSchema.parse(response.data);
   },
 
   /**
