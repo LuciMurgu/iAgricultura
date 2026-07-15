@@ -91,5 +91,6 @@ pnpm start
 ```
 
 The Next.js config sets `output: "standalone"`, so the build can be packaged
-into a small container if needed. The default deployment target is Vercel
-(see the project's [`vercel.json`](vercel.json) and root [`DEPLOYMENT.md`](../../DEPLOYMENT.md)).
+into a small container if needed. The deployment target is Render
+(`farm-copilot-web` in the root [`render.yaml`](../../render.yaml) blueprint);
+see the root [`DEPLOYMENT.md`](../../DEPLOYMENT.md) for the full topology.

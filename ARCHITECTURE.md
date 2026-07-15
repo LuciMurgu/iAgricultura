@@ -10,18 +10,18 @@ Deeper detail lives in [`docs/02_architecture.md`](docs/02_architecture.md) and
 
 ```mermaid
 flowchart LR
-  Browser[Farmer browser] --> CF[Cloudflare<br/>DNS + SSL + WAF + CDN]
-  CF -->|"iagricultura.ro"| Vercel[Vercel<br/>Next.js SPA]
-  CF -->|"api.iagricultura.ro"| Nginx[nginx on VPS<br/>port 80]
-  Nginx --> API[FastAPI container<br/>port 8000<br/>+ ANAF scheduler]
-  Vercel -.->|"/api/v1 fetch"| CF
+  Browser[Farmer browser] --> CF[Cloudflare<br/>DNS only]
+  CF -->|"www.iagricultura.ro"| Web[Render Web<br/>Next.js SPA]
+  CF -->|"api.iagricultura.ro"| API[Render API<br/>FastAPI container<br/>port 8000]
+  Web -.->|"/api/v1 fetch"| API
   API --> Supabase[(Supabase Postgres<br/>transaction pooler)]
   API --> ANAF[ANAF SPV<br/>e-Factura API]
 ```
 
 The frontend is a stateless SPA. The backend is a single long-running container
-because it hosts a periodic ANAF auto-sync scheduler. The database is managed
-by Supabase. Cloudflare sits in front of both apps for SSL and protection.
+(it can also host the periodic ANAF auto-sync scheduler; disabled in the demo
+deploy). The database is managed by Supabase. Cloudflare is the DNS host;
+Render terminates TLS and deploys both apps from `main` via `render.yaml`.
 
 ---
 

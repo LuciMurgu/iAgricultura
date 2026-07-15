@@ -77,12 +77,14 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full development guide.
 
 ## Production deployment
 
-See [`DEPLOYMENT.md`](DEPLOYMENT.md). Topology:
+See [`DEPLOYMENT.md`](DEPLOYMENT.md). Topology (live at [iagricultura.ro](https://www.iagricultura.ro)):
 
-- **Web** on Vercel
-- **API** on a VPS via Docker
+- **Web** on Render (`farm-copilot-web`, Next.js)
+- **API** on Render (`farm-copilot-api`, Docker)
 - **Postgres** on Supabase
-- **DNS, SSL, WAF, CDN** on Cloudflare
+- **DNS** on Cloudflare (DNS-only; Render terminates TLS)
+
+Both services auto-deploy from `main` via the [`render.yaml`](render.yaml) blueprint.
 
 ---
 

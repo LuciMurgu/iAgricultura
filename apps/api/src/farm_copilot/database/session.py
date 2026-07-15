@@ -17,7 +17,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-
 # Local development default. Used as a sentinel by startup validation so we can
 # refuse to boot in production against the throwaway local database.
 LOCAL_DEFAULT_DATABASE_URL = (

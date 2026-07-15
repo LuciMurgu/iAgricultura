@@ -14,8 +14,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import pytest
-
 from farm_copilot.domain.procurement_review import (
     PROCUREMENT_REVIEW_DISCLAIMER,
     ProcurementReviewInput,

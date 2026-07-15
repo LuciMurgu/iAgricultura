@@ -1,5 +1,6 @@
-# Production Docker Compose for the FastAPI backend.
-# Database is external (Supabase). Frontend is external (Vercel).
+# Production Docker Compose for the FastAPI backend — the "VPS alternative"
+# described in DEPLOYMENT.md (the demo deploy runs on Render instead).
+# Database is external (Supabase). Frontend is external (Render web service).
 # nginx runs on the host (not in compose) and proxies to port 8000.
 #
 # Run from the repo root:

@@ -11,7 +11,8 @@ For deeper backend-specific decisions, see also [`apps/api/docs/DECISIONS.md`](a
 
 | # | Title | Status |
 |---|---|---|
-| [0001](docs/adr/0001-deploy-topology.md) | Deployment topology — Vercel + VPS + Supabase + Cloudflare | Accepted |
+| [0001](docs/adr/0001-deploy-topology.md) | Deployment topology — Vercel + VPS + Supabase + Cloudflare | Superseded by 0002 |
+| [0002](docs/adr/0002-render-deploy.md) | Render for both web and API (demo deploy) | Accepted |
 
 ---
 

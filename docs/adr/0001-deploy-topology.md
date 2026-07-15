@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted (2026-06-18).
+Superseded by [ADR 0002](0002-render-deploy.md) (2026-06-18).
+
+The topology below (Vercel + VPS) was the original plan. During the actual
+launch the demo deploy went to **Render for both web and API** — see ADR 0002
+for the reasoning. This document is kept for the record.
 
 ## Context
 

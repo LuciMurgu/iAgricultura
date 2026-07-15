@@ -12,7 +12,7 @@ module.exports = () => {
   if (isBuild && isProd && !apiUrl) {
     throw new Error(
       "NEXT_PUBLIC_API_URL must be set for production builds " +
-        "(e.g. https://api.iagricultura.ro). Set it in the Vercel project env.",
+        "(e.g. https://api.iagricultura.ro). Set it in the Render service env.",
     );
   }
 
@@ -32,6 +32,10 @@ module.exports = () => {
                   { key: "X-Frame-Options", value: "DENY" },
                   { key: "X-XSS-Protection", value: "1; mode=block" },
                   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+                  {
+                    key: "Permissions-Policy",
+                    value: "camera=(), microphone=(), geolocation=(self)",
+                  },
                   {
                     key: "Content-Security-Policy",
                     value: [

@@ -66,10 +66,10 @@ Common causes:
 
 ## Frontend serves stale data after deploy
 
-Vercel caches aggressively. Force a redeploy:
+Force a clean redeploy:
 
-1. Vercel dashboard, project, Deployments, Redeploy with "Use existing Build Cache" off.
-2. Cloudflare cache: dashboard, Caching, Purge Everything (use sparingly).
+1. Render dashboard, `farm-copilot-web`, Manual Deploy, "Clear build cache & deploy".
+2. Cloudflare records are DNS-only (no proxy cache), so no purge is needed there.
 
 ---
 

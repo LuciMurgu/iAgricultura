@@ -83,7 +83,7 @@ Session-based via Starlette `SessionMiddleware`. The session cookie carries
 
 In production the cookie must be set with:
 
-- `domain=.iagricultura.ro` (so the Vercel-served frontend can include it on calls to `api.iagricultura.ro`)
+- `domain=.iagricultura.ro` (so the frontend at `www.iagricultura.ro` can include it on calls to `api.iagricultura.ro`)
 - `samesite=lax`
 - `secure=true`
 - `httponly=true`

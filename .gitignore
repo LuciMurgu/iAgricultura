@@ -53,3 +53,8 @@ Thumbs.db
 # Misc
 .npm/
 .pnpm-store/
+
+# One-off ops script output (never commit scratch results)
+apps/api/scripts/*_result.txt
+apps/api/scripts/*_errors.txt
+apps/api/scripts/*_report.txt
